@@ -17,6 +17,7 @@ const config: Config = {
         pink: "#FFC3FE",
         purple: "#9883FD",
         lightPurple: "#E4DDFF",
+        darkPurple:"#6557A6",
         skyBlue: "#B5F5FC",
         black: "#000000",
       },
