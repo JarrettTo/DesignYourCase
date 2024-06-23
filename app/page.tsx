@@ -10,7 +10,7 @@ import Footer from "@/components/footer"
 
 export default function Home() {
   return (
-    <main className="flex flex-col w-full">
+    <main className="flex flex-col w-full overflow-x-hidden">
         <LandingNavbar />
         <Hero />
         <Heading />

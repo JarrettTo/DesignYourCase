@@ -5,7 +5,7 @@
 /* Font Styles */
 @font-face{
   font-family: LoubagBold;
-  src: url(/assets/fonts/Loubag-Bold.ttf) format("truetype");
+  src: url(/assets/fonts/loubag/ttf/Loubag-Bold.ttf) format("truetype");
   font-weight: normal;
   font-style: normal;
 }

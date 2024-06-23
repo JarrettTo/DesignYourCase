@@ -4,11 +4,11 @@ export default function Steps() {
     return(
         <div className="mt-10">
             <div className="flex flex-col items-center">
-                <p className="font-bold text-darkPurple text-center text-2xl">
+                <p className="font-bold text-darkPurple text-center text-2xl md:text-5xl">
                     4 Easy Steps!
                 </p>
-                <div className="flex flex-col px-10 py-5 gap-4 ">
-                    <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center">
+                <div className="flex flex-col px-10 py-5 gap-4 md:text-2xl text-darkPurple">
+                    <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center md:p-5">
                     <p className="font-bold">
                         CHOOSE YOUR CASE STYLE
                     </p>
@@ -17,7 +17,7 @@ export default function Steps() {
                     </p>
                     </div>
 
-                    <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center ">
+                    <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center md:p-5">
                     <p className="font-bold">
                         CHOOSE YOUR PHONE MODEL
                     </p>
@@ -26,7 +26,7 @@ export default function Steps() {
                     </p>
                     </div>
 
-                    <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center">
+                    <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center md:p-5">
                     <p className="font-bold">
                         DESIGN YOUR CASE
                     </p>
@@ -35,7 +35,7 @@ export default function Steps() {
                     </p>
                     </div>
 
-                    <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center">
+                    <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center md:p-5">
                     <p className="font-bold">
                         ADD TO CART/CHECKOUT
                     </p>
@@ -45,7 +45,7 @@ export default function Steps() {
                     </div>
                 </div>
 
-                <button className="bg-gradient-to-r from-pink to-skyBlue py-2 px-7 rounded-2xl text-white font-bold w-3/6">
+                <button className="bg-gradient-to-r from-pink to-skyBlue py-2 px-7 rounded-2xl text-white font-bold ">
                         Start Designing
                 </button>
                 
