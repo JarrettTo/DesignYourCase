@@ -45,7 +45,7 @@ export default function Steps() {
                     </div>
                 </div>
 
-                <button className="bg-gradient-to-r from-pink to-skyBlue py-2 px-7 rounded-2xl text-white font-bold ">
+                <button className="bg-gradient-to-r from-pink to-skyBlue py-2 px-7 rounded-2xl text-white font-bold text-3xl ">
                         Start Designing
                 </button>
                 

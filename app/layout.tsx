@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import AuthSessionProvider from "./auth/auth-session-provider";
 
-const poppins = Poppins({ subsets: ["latin"], weight: ["400", "700"] }); // Configure Poppins with desired subsets and weights
+const poppins = Poppins({ subsets: ["latin"], weight: ["400", "700"] });
 
 export const metadata: Metadata = {
   title: "Design Your Case",
@@ -10,13 +11,18 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
+  children, session
 }: Readonly<{
   children: React.ReactNode;
+  session: any;
 }>) {
   return (
     <html lang="en">
-      <body className={poppins.className}>{children}</body>
+      <body className={poppins.className}>
+        <AuthSessionProvider session={session}>
+          {children}
+        </AuthSessionProvider>
+      </body>
     </html>
   );
 }
