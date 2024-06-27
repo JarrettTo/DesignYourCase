@@ -9,8 +9,8 @@ type AuthSessionProviderProps = {
   session: any;
 };
 
-const AuthSessionProvider = ({ children, session }: AuthSessionProviderProps) => {
-  return <SessionProvider session={session}>{children}</SessionProvider>;
+const AuthSessionProvider = ({ children }: { children: React.ReactNode }) => {
+  return <SessionProvider>{children}</SessionProvider>;
 };
 
 export default AuthSessionProvider;

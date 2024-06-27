@@ -11,15 +11,14 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children, session
-}: Readonly<{
+  children,
+}: {
   children: React.ReactNode;
-  session: any;
-}>) {
+}) {
   return (
     <html lang="en">
       <body className={poppins.className}>
-        <AuthSessionProvider session={session}>
+        <AuthSessionProvider>
           {children}
         </AuthSessionProvider>
       </body>
