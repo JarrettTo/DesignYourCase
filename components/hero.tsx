@@ -19,7 +19,7 @@ export default function Hero() {
                         alt="design your case" 
                         width={300} 
                         height={300} 
-                        className="md:w-[500px] md:h-[470px]"
+                        className="md:w-[700px] md:h-[500px]"
                     />
                 </div>
                 <div className="absolute -left-14 top-60 md:-left-20">
