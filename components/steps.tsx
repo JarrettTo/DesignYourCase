@@ -4,7 +4,7 @@ export default function Steps() {
     return(
         <div className="mt-10">
             <div className="flex flex-col items-center">
-                <p className="font-bold text-darkPurple text-center text-2xl md:text-5xl">
+                <p className="font-bold font-[LoubagBold] text-darkPurple text-center text-2xl md:text-5xl">
                     4 Easy Steps!
                 </p>
                 <div className="flex flex-col px-10 py-5 gap-4 md:text-2xl text-darkPurple">
