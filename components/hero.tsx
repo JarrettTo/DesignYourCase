@@ -32,7 +32,7 @@ export default function Hero() {
                     />
                 </div>
                 <div className="flex justify-center">
-                    <button className="bg-gradient-to-r from-pink to-skyBlue py-2 px-7 rounded-full text-white font-bold text-2xl md:text-5xl md:py-4 md:px-7 md:rounded-3xl">
+                    <button className="bg-gradient-to-r from-pink to-skyBlue py-2 px-7 rounded-full text-white font-bold text-2xl md:text-5xl md:py-4 md:px-7 ">
                         Get Started
                     </button>
                 </div>
