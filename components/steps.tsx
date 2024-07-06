@@ -7,41 +7,41 @@ export default function Steps() {
                 <p className="font-bold font-[LoubagBold] text-darkPurple text-center text-2xl md:text-5xl">
                     4 Easy Steps!
                 </p>
-                <div className="flex flex-col px-10 py-5 gap-4 md:text-2xl text-darkPurple">
-                    <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center md:p-5">
-                    <p className="font-bold">
-                        CHOOSE YOUR CASE STYLE
-                    </p>
-                    <p className="text-xs">
-                        Find the Perfect Case for your phone!
-                    </p>
+                <div className="flex flex-col py-5 gap-4 md:text-2xl text-darkPurple">
+                    <div className="flex-flex-col bg-lightPurple rounded-xl py-3 px-10 text-center md:p-5">
+                        <p className="font-bold">
+                            CHOOSE YOUR CASE STYLE
+                        </p>
+                        <p className="text-xs">
+                            Find the Perfect Case for your phone!
+                        </p>
                     </div>
 
                     <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center md:p-5">
-                    <p className="font-bold">
-                        CHOOSE YOUR PHONE MODEL
-                    </p>
-                    <p className="text-xs">
-                        Discover a vast selection of phone models
-                    </p>
+                        <p className="font-bold">
+                            CHOOSE YOUR PHONE MODEL
+                        </p>
+                        <p className="text-xs">
+                            Discover a vast selection of phone models
+                        </p>
                     </div>
 
                     <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center md:p-5">
-                    <p className="font-bold">
-                        DESIGN YOUR CASE
-                    </p>
-                    <p className="text-xs">
-                        Customize with images, text, and stickers
-                    </p>
+                        <p className="font-bold">
+                            DESIGN YOUR CASE
+                        </p>
+                        <p className="text-xs">
+                            Customize with images, text, and stickers
+                        </p>
                     </div>
 
                     <div className="flex-flex-col bg-lightPurple rounded-xl p-2 text-center md:p-5">
-                    <p className="font-bold">
-                        ADD TO CART/CHECKOUT
-                    </p>
-                    <p className="text-xs">
-                        Complete your creation
-                    </p>
+                        <p className="font-bold">
+                            ADD TO CART/CHECKOUT
+                        </p>
+                        <p className="text-xs">
+                            Complete your creation
+                        </p>
                     </div>
                 </div>
 

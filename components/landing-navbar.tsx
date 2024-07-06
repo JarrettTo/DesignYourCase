@@ -26,7 +26,7 @@ function LandingNavbar() {
     console.log('Status', status)
 
     return (
-        <div className="flex flex-row justify-between items-center w-full mt-5 p-10 h-10">
+        <div className="absolute flex flex-row justify-between items-center w-full mt-5 py-6 px-8 h-10">
             <Image 
                 src="/assets/images/logo-gradient.svg" 
                 alt="alt" 

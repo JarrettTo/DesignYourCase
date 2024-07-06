@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Heading(){
     return(
-        <div className="bg-lightPurple mt-10 py-5 px-3 md:p-20 sm:p-10 ">
+        <div className="bg-lightPurple py-5 px-3 md:p-14 sm:p-10 ">
             <div className="flex flex-row gap-8 md:gap-14 md:justify-center">
                 <div className="flex items-center">
                     <Image 
