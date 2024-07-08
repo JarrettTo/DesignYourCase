@@ -4,13 +4,9 @@ export default function Promo(){
     return(
         <div className="mt-10 px-5">
             <div className="flex flex-col text-darkPurple">
-                    
-                <div className="ml-5 font-bold text-2xl md:text-5xl">
-                    Buy 3 for
-                </div>
 
                 <div className="relative">
-                    <div className="absolute -top-14 right-10 md:right-[400px]">
+                    <div className="absolute -top-8 right-10 md:right-[400px]">
                             <Image 
                             src="/assets/images/star-flipped.svg" 
                             alt="alt" 
@@ -21,6 +17,9 @@ export default function Promo(){
                     </div>
                 </div>
                     
+                <p className="ml-5 font-bold text-2xl md:text-5xl md:flex md:justify-center md:max-w-screen-lg">
+                    Buy 3 for
+                </p>
                 
                 <div className="flex justify-center font-bold text-4xl font-['LoubagBold'] ml-7 md:text-7xl md:mt-4 md:mb-4">
                     Free Delivery!

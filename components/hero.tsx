@@ -2,10 +2,10 @@ import Image from "next/image";
 
 export default function Hero() {
     return(
-        <div className="flex flex-col mt-24 gap-10 md:-mt-10 h-[35vh] md:min-h-screen justify-center">
+        <div className="flex flex-col mt-24 md:mt-10 gap-10 h-[35vh] md:min-h-screen justify-center">
             
             <div className="relative">
-                <div className="absolute -top-20 -right-12 md:-right-28">
+                <div className="absolute -top-20 md:-top-16 -right-12 md:-right-28">
                     <Image 
                         src="/assets/images/star.svg" 
                         alt="star" 
@@ -34,7 +34,7 @@ export default function Hero() {
                         className="md:w-[1000px] md:h-[350px]"
                     />
                 </div>
-            <div className="flex justify-center mt-10 md:-mt-14">
+            <div className="flex justify-center mt-10">
                     <button className="bg-gradient-to-r from-pink to-skyBlue py-3 px-9 rounded-full text-white font-bold text-xl md:text-5xl md:py-4 md:px-7 ">
                         <p className=" drop-shadow-md">
                             Get Started
