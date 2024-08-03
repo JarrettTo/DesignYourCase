@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ShoppingCartItem from "./ShoppingCartItem";
+import ShoppingCartItem from "../../components/ShoppingCartItem";
 
 export default function ShoppingCart() {
   return (
@@ -39,7 +39,7 @@ export default function ShoppingCart() {
               <p>S22 Transparent Blue Case</p>
               <p className="text-sm text-gray-600">1&times;</p>
             </div>
-            <div className="flex flex-col items-end">
+            <div className="grid grid-rows-2 justify-items-end">
               <p>25.0</p>
               <p className="text-sm text-gray-600"></p>
             </div>
@@ -52,7 +52,7 @@ export default function ShoppingCart() {
               <p>iPhone 15 Matte Yellow Case</p>
               <p className="text-sm text-gray-600">3&times;</p>
             </div>
-            <div className="flex flex-col items-end">
+            <div className="grid grid-rows-2 justify-items-end">
               <p>96.0</p>
               <p className="text-sm text-gray-600">32.0 each</p>
             </div>
