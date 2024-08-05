@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@layer tailwind-base, primereact, tailwind-utilities;
 
 /* Font Styles */
 @font-face{
@@ -9,6 +10,7 @@
   font-weight: normal;
   font-style: normal;
 }
+
 
 /* :root {
   --foreground-rgb: 0, 0, 0;
