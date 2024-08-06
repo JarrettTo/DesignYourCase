@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     const {test} = body;
 
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         defaultViewport: null,
     });
 
@@ -35,5 +35,5 @@ export async function POST(req: Request) {
 
     console.log(data);
 
-    return Response.json({test});
+    return Response.json({data});
 }

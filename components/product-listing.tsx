@@ -6,22 +6,31 @@ import { PrimeReactProvider } from 'primereact/api';
 import { Checkbox } from 'primereact/checkbox';
 import { classNames } from 'primereact/utils';
 
+const brands = [
+    {name: "Apple", key: "apple"},
+    {name: "Samsung", key: "samsung"},
+    {name: "Xiaomi", key: "xiaomi"},
+    {name: "Huawei", key: "huawei"}
+];
+
 export default function ProductListing() {
+    const [selectedCategories, setSelectedCategories] = useState([brands[0], brands[1], brands[2], brands[3]]);
+    const [models, setModels] = useState<string[]>([]);
 
     useEffect(() => {
-        const testRoute = async() => {
+        const fetchModels = async() => {
             const checkResponse = await fetch('/api/product', {
                 method: "POST",
                 body: JSON.stringify({
-                    test: "https://detail.tmall.com/item.htm?id=633822711776&ut_sk=1.YEr%20b1EThLQDAICeuGyBoZgc_21380790_1716949270044.Copy.1&sourceType=item&price=13.8-28.8&origin_price=13.8-28.8&suid=B2CDFF80-1C15-4C4C-BAE1-68D7374992D6&shareUniqueId=26903011197&un=d097fafa7ae7fd9ac2562b1d2bdb5a97&share_crt_v=1&un_site=0&spm=a2159r.13376460.0.0&tbSocialPopKey=shareItem&sp_tk=N3FRbFd3amNYRnA=&cpp=1&shareurl=true&short_name=h.gePqtIIqogvFrGr&bxsign=scd1W_xuRZ3B5SF31SKD3FFz4B8owdUCWgqryJKXNMEhF8IPOc2Zb2qkizPfBERWerAB6-Td3_DRzSuRiweWd7SAWmh7KICWP9sZrn8S_nepD9fNooFNOipLqEjQ2t7rK6F&tk=7qQlWwjcXFp&app=chrome&skuId=5074591724720"
+                    test: "https://m.tb.cn/h.gePqtIIqogvFrGr?tk=7qQlWwjcXFp"
                 })
             });
 
             const result = await checkResponse.json();
-            console.log(result);
+            setModels(result.data);
         }
 
-        testRoute();
+        fetchModels();
     }, []);
 
     const DesignStyle = {
@@ -48,15 +57,6 @@ export default function ProductListing() {
           icon: 'w-[12px] h-[12px] transition-all duration-200 text-white text-base '
       }
     }
-
-    const brands = [
-        {name: "Apple", key: "apple"},
-        {name: "Samsung", key: "samsung"},
-        {name: "Xiaomi", key: "xiaomi"},
-        {name: "Huawei", key: "huawei"}
-    ];
-
-    const [selectedCategories, setSelectedCategories] = useState([brands[0], brands[1], brands[2], brands[3]]);
 
     const onCategoryChange = (e: any) => {
         let _selectedCategories = [...selectedCategories];
@@ -85,9 +85,9 @@ export default function ProductListing() {
                         </div>
                     ))}
                 </div>
-                <div className="w-[1200px] h-full flex items-center justify-center flex-wrap my-14">
-                    {Array.from({ length: 6 }).map((_, index) => (
-                        <ItemCard key={index}/>
+                <div className="w-[1200px] h-full flex flex-row flex-wrap items-center my-14">
+                    {models?.map((item, index) => (
+                        <ItemCard key={index} productName={item}/>
                     ))}
                 </div>
             </div>
