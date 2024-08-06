@@ -16,14 +16,17 @@
     "next": "^14.2.4",
     "next-auth": "^4.24.7",
     "primereact": "^10.8.0",
+    "puppeteer": "^22.15.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "supabase": "^1.187.3"
+    "supabase": "^1.187.3",
+    "website-scraper": "^5.3.1"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/website-scraper": "^1.2.10",
     "eslint": "^8",
     "eslint-config-next": "14.2.4",
     "postcss": "^8",
