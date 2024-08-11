@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
 const fs = require('fs').promises;
+import translate from '@iamtraction/google-translate';
 
 export async function POST(req: Request) {
     const body = await req.json();
@@ -33,7 +34,28 @@ export async function POST(req: Request) {
     });
 
 
-    console.log(data);
+    //console.log(data);
 
-    return Response.json({data});
+    var translatedArr: string[] = [];
+
+    const translateText = async(options: any) => {
+        const translationPromises = data.map(async (item) => {
+            try {
+                const res = await translate(item, options);
+                //console.log(res.text);
+                return res.text; 
+            } catch (err) {
+                console.log(err);
+                return '';
+            }
+        })
+
+        const array = await Promise.all(translationPromises);
+        return array;   
+    }
+
+    translatedArr = await translateText({to: "en"});
+
+    console.log(translatedArr);
+    return Response.json({translatedArr});
 }

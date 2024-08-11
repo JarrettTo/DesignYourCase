@@ -1,7 +1,73 @@
+'use client'
+
 import Image from "next/image";
 import { Button } from '@mantine/core';
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+const phoneModels = [
+    'iPhone', 'Huawei', 'Honor', 'OPPO', 'Vivo', 'OnePlus', 'Xiaomi'
+];
 
 export default function ProductSelection() {
+    const searchParams = useSearchParams();
+    const link = searchParams.get('link');
+
+    const [models, setModels] = useState([]);
+    const [categories, setCategories] = useState<[string, string[]][]>([]);
+
+    useEffect(() => {
+        const fetchModels = async() => {
+            const checkResponse = await fetch('/api/product', {
+                method: "POST",
+                body: JSON.stringify({
+                    test: link
+                })
+            });
+
+            const result = await checkResponse.json();
+            console.log(result);
+            setModels(result.translatedArr);
+        }
+
+       fetchModels();
+    }, []);
+
+    useEffect(() => {
+        
+        const groupModels = () => {
+            const newCategories: {[brand: string]: string[]} = {};
+            models?.map((model: any) => {
+                const [brandName, ...rest] = model.split(' ');
+                const brandIndex = phoneModels.indexOf(brandName);
+                const brand = phoneModels[brandIndex];
+                console.log(brand);
+
+                if (brand) {
+                    if (!newCategories[brand]) {
+                        newCategories[brand] = [];
+                    }
+                    newCategories[brand].push(model);
+                }
+            });
+
+            var result = Object.entries(newCategories);
+            console.log(result);
+
+            var sorted: [string, string[]][] = [];
+
+            for (let i = 0; i < result.length; i++) {
+                sorted.push([result[i][0], result[i][1].sort()]);
+            }
+
+            setCategories(sorted);
+        }
+
+        groupModels();
+        console.log(categories);
+    }, [models]);
+
+
     return(
     <div className="w-full h-full flex flex-col items-center justify-start">
         <div className="h-screen w-full bg-white flex flex-col items-center justify-start">
@@ -47,40 +113,17 @@ export default function ProductSelection() {
             </div>
         </div>
 
-        <div className="h-screen w-full bg-[#E9E0FF] flex flex-col items-center justify-start">
+        <div className="min-h-screen w-full bg-[#E9E0FF] flex flex-col items-center justify-start">
             <p className="mt-20 font-Loubag text-[30px] text-black">Choose your phone model</p>
-            <div className="h-[22rem] mt-24 flex flex-row items-center justify-center w-[63rem]">
-                <div className="h-full flex flex-col items-center justify-center">
-                    <Image 
-                        src="/assets/images/transparent-case.png"
-                        alt="transparent case"
-                        width={170}
-                        height={170}
-                        className="mb-5 mx-6"
-                    />
-                    <p className="text-xl text-black font-Poppins font-semibold">Transparent</p>
-                </div> 
-
-                <div className="h-full flex flex-col items-start justify-start mx-4">
-                    <p className="text-lg font-Poppins font-bold my-3">APPLE</p>
-                    <p className="text-md font-Poppins">iPhone 15 Pro</p>
-                    <p className="text-md font-Poppins">iPhone 15</p>
-                </div>
-                <div className="h-full flex flex-col items-start justify-start mx-4">
-                    <p className="text-lg font-Poppins font-bold my-3">SAMSUNG</p>
-                    <p className="text-md font-Poppins">Galaxy S24 Ultra</p>
-                    <p className="text-md font-Poppins">Galaxy S24</p>
-                </div>
-                <div className="h-full flex flex-col items-start justify-start mx-4">
-                    <p className="text-lg font-Poppins font-bold my-3">XIAOMI</p>
-                    <p className="text-mdfont-Poppins">Xiaomi Mi 14 Pro</p>
-                    <p className="text-md font-Poppins">Xiaomi Mi 14</p>
-                </div>
-                <div className="h-full flex flex-col items-start justify-start mx-4">
-                    <p className="text-lg font-Poppins font-bold my-3">HUAWEI</p>
-                    <p className="text-md font-Poppins">Huawei 60 Pro</p>
-                    <p className="text-md font-Poppins">Huawei 60</p>
-                </div>
+            <div className="h-auto mt-24 flex flex-row items-start justify-center w-auto">             
+                {categories?.map((brand, index) => (
+                    <div key={index} className="h-full flex flex-col items-start justify-start mx-10">
+                        <p className="text-lg font-Poppins font-bold my-3">{brand[0]}</p>
+                        {brand[1].map((phone, phoneIndex) => (
+                            <p key={phoneIndex} className="text-md font-Poppins my-1">{phone}</p>
+                        ))}
+                    </div>
+                ))}
             </div>
             <Button variant="gradient" size='xl' radius='xl' gradient={{from: '#FFC3FE', to: '#B5F5FC', deg: 90}}  
                 styles={{
