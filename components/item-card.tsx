@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type ItemCardProps = {
     productName: string;
 }
@@ -5,12 +7,13 @@ type ItemCardProps = {
 export default function ItemCard({productName}: ItemCardProps) {
     
     return(
-    <div className="w-[273px] h-[339px] mx-[50px] mb-14">
-        <div className="w-[273px] h-[273px] bg-[#c8bfdc] flex items-center justify-center">
-            <img className="w-[126.45px] h-[229.13px]" src="https://via.placeholder.com/126x229" />
+    <Link href="/product-selection">
+        <div className="w-[273px] h-auto mx-[50px] px-2 rounded-lg transition-all mb-14 cursor-pointer bg-white hover:drop-shadow-2xl">
+            <div className="w-full aspect-square bg-[#c8bfdc] flex items-center justify-center">
+                <img className="w-[126.45px] h-[229.13px]" src="https://via.placeholder.com/126x229" />
+            </div>
+            <p className="text-black text-base font-semibold font-Poppins">{productName}</p>
         </div>
-        <p className="w-full h-[35px] text-black text-base font-semibold font-Poppins">{productName}</p>
-        <p className="w-full h-[35px] text-black text-base font-normal font-Poppins">$100</p>
-    </div>
+    </Link>
     );
 }

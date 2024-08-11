@@ -9,13 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@mantine/core": "^7.12.0",
+    "@mantine/hooks": "^7.12.0",
     "@supabase/ssr": "^0.4.0",
     "@supabase/supabase-js": "^2.44.4",
     "iron-session": "^8.0.2",
     "mysql2": "^3.10.1",
     "next": "^14.2.4",
     "next-auth": "^4.24.7",
-    "primereact": "^10.8.0",
+    "next-translate": "^2.6.2",
     "puppeteer": "^22.15.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -29,7 +31,10 @@
     "@types/website-scraper": "^1.2.10",
     "eslint": "^8",
     "eslint-config-next": "14.2.4",
-    "postcss": "^8",
+    "next-translate-plugin": "^2.6.2",
+    "postcss": "^8.4.41",
+    "postcss-preset-mantine": "^1.17.0",
+    "postcss-simple-vars": "^7.0.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }
