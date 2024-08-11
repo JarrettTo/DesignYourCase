@@ -28,12 +28,13 @@ export default function ProductListing() {
     ];
 
     return(
-        <div className="w-full h-full flex flex-row items-start justify-center bg-white">
-        <div className="w-[1200px] h-full flex flex-row flex-wrap items-center my-14">
-            {shops?.map((item, index) => (
-                <ItemCard key={index} productName={item}/>
-            ))}
+        <div className="w-full h-full flex flex-col items-center justify-start bg-white">
+            <p className="mt-20 font-Loubag text-[30px] text-[#A594F6]">Product Listings</p>
+            <div className="w-[1200px] h-full flex flex-row flex-wrap items-start justify-center my-14">
+                {shops?.map((item, index) => (
+                    <ItemCard key={index} productName={item}/>
+                ))}
+            </div>
         </div>
-    </div>
    );
 }
