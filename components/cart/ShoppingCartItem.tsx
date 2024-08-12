@@ -13,6 +13,7 @@ interface ShoppingCartItemProps {
   selected: boolean;
   onCheckboxChange: (id: number) => void;
   onQuantityChange: (id: number, quantity: number) => void;
+  onDelete: (id: number) => void;
 }
 
 const ShoppingCartItem: React.FC<ShoppingCartItemProps> = ({
@@ -26,9 +27,10 @@ const ShoppingCartItem: React.FC<ShoppingCartItemProps> = ({
   selected,
   onCheckboxChange,
   onQuantityChange,
+  onDelete,
 }) => {
   const handleDecrement = () => {
-    if (quantity > 0) {
+    if (quantity > 1) {
       onQuantityChange(id, quantity - 1);
     }
   };
@@ -41,8 +43,23 @@ const ShoppingCartItem: React.FC<ShoppingCartItemProps> = ({
     const value = e.target.value;
     const numberValue = parseInt(value, 10);
 
-    if (value === "" || (numberValue >= 0 && !isNaN(numberValue))) {
+    if (value === "" || !isNaN(numberValue)) {
       onQuantityChange(id, numberValue || 0); // Set to 0 if empty
+    }
+  };
+
+  const handleBlur = () => {
+    if (quantity < 1) {
+      onQuantityChange(id, quantity + 1); // Set to 1 if less than 1
+    }
+  };
+
+  const handleDelete = () => {
+    const isConfirmed = window.confirm(
+      "Are you sure you want to delete this design?"
+    );
+    if (isConfirmed) {
+      onDelete(id);
     }
   };
 
@@ -63,18 +80,25 @@ const ShoppingCartItem: React.FC<ShoppingCartItemProps> = ({
         </div>
       </div>
       <div className="col-span-2 flex flex-row items-center">
-        <p onClick={handleDecrement} className="cursor-default select-none">
+        <button
+          onClick={handleDecrement}
+          className="cursor-default select-none"
+        >
           -
-        </p>
+        </button>
         <input
           type="text"
           className="w-8 h-8 border border-gray-300 p-0.5 rounded mx-4 text-center"
           value={quantity}
           onChange={handleInputChange}
+          onBlur={handleBlur}
         />
-        <p onClick={handleIncrement} className="cursor-default select-none">
+        <button
+          onClick={handleIncrement}
+          className="cursor-default select-none"
+        >
           +
-        </p>
+        </button>
       </div>
       <div className="col-span-2">
         <p>{price}</p>
@@ -83,7 +107,9 @@ const ShoppingCartItem: React.FC<ShoppingCartItemProps> = ({
         <p>{price * quantity}</p>
       </div>
       <div className="">
-        <p className="text-sm font-bold">&#10005;</p>
+        <button className="text-sm font-bold" onClick={handleDelete}>
+          &#10005;
+        </button>
       </div>
     </div>
   );

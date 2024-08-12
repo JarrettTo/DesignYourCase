@@ -42,6 +42,12 @@ const ShoppingCartPage: React.FC = () => {
     );
   };
 
+  const handleItemDelete = (id: number) => {
+    setShoppingCartItems((prevItems) =>
+      prevItems.filter((item) => item.id !== id)
+    );
+  };
+
   return (
     <div className="flex min-h-screen">
       <div className="p-20 flex-1 overflow-y-auto">
@@ -68,6 +74,7 @@ const ShoppingCartPage: React.FC = () => {
               {...item}
               onCheckboxChange={handleCheckboxChange}
               onQuantityChange={handleQuantityChange}
+              onDelete={handleItemDelete}
             />
           ))}
         </div>
