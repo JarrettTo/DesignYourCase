@@ -21,15 +21,15 @@ const OrderSummaryItem: React.FC<OrderSummaryItemProps> = ({
   selected,
 }) => {
   return (
-    <div className="flex items-center">
+    <div className="flex items-start">
       <img src={image} alt="Case Design" className="w-16 h-16" />
-      <div className="flex-1 ml-4">
-        <p>
+      <div className="flex-1 ml-4 min-w-0">
+        <p className="whitespace-normal overflow-hidden">
           {model} {material} {color} Case
         </p>
         <p className="text-sm text-gray-600">{quantity}&times;</p>
       </div>
-      <div className="flex flex-col items-end">
+      <div className="flex flex-col items-end justify-start ml-8">
         <p>{price * quantity}</p>
         <p className="text-sm text-gray-600">
           {quantity > 1 ? `${price} each` : "\u00A0"}

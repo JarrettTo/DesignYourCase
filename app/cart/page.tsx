@@ -49,8 +49,8 @@ const ShoppingCartPage: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <div className="p-20 flex-1 overflow-y-auto">
+    <div className="flex flex-col lg:flex-row min-h-screen">
+      <div className="p-20 flex-1 overflow-y-auto bg-white">
         <div className="flex items-end mb-16">
           <h1 className="text-4xl font-bold text-gray-700">Shopping cart</h1>
           <h2 className="text-xl ml-10 font-bold text-gray-700">3 items</h2>
@@ -80,8 +80,8 @@ const ShoppingCartPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-gray-50 w-1/3">
-        <div className="p-20 sticky top-0 space-y-8">
+      <div className="bg-gray-50 w-full lg:w-1/3">
+        <div className="p-20 md:p-32 lg:p-20 sticky top-0 space-y-8 flex flex-col">
           <div className="mb-12">
             <h1 className="text-3xl font-bold text-gray-700">Order Summary</h1>
           </div>
@@ -90,35 +90,40 @@ const ShoppingCartPage: React.FC = () => {
             .map((item) => (
               <OrderSummaryItem key={item.id} {...item} />
             ))}
-          <div className="grid grid-cols-2">
-            <p>Subtotal</p>
-            <p className="justify-self-end">
-              {shoppingCartItems.some((item) => item.selected) ? subtotal : ""}
-            </p>
-          </div>
-          <div className="grid grid-cols-2">
-            <p>Shipping</p>
-            <p className="justify-self-end">
-              {shoppingCartItems.some((item) => item.selected) ? shipping : ""}
-            </p>
-          </div>
-          <hr className="border-t border-gray-300 my-4"></hr>
-          <div className="grid grid-cols-2">
-            <p className="font-bold">Total</p>
-            <p className="font-bold justify-self-end">
-              {shoppingCartItems.some((item) => item.selected)
-                ? subtotal + shipping
-                : ""}
-            </p>
-          </div>
-
-          <div className="flex justify-center">
-            <Link
-              href=""
-              className="bg-[#9883FD] text-white py-2 w-full rounded text-center"
-            >
-              Check Out
-            </Link>
+          <div className="flex flex-col space-y-4 mt-4">
+            <div className="flex justify-between">
+              <p>Subtotal</p>
+              <p>
+                {shoppingCartItems.some((item) => item.selected)
+                  ? subtotal
+                  : ""}
+              </p>
+            </div>
+            <div className="flex justify-between">
+              <p>Shipping</p>
+              <p>
+                {shoppingCartItems.some((item) => item.selected)
+                  ? shipping
+                  : ""}
+              </p>
+            </div>
+            <hr className="border-t border-gray-300 my-4" />
+            <div className="flex justify-between font-bold">
+              <p>Total</p>
+              <p>
+                {shoppingCartItems.some((item) => item.selected)
+                  ? subtotal + shipping
+                  : ""}
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <Link
+                href=""
+                className="bg-[#9883FD] text-white py-2 w-full rounded text-center"
+              >
+                Check Out
+              </Link>
+            </div>
           </div>
         </div>
       </div>
