@@ -22,16 +22,15 @@ function LandingNavbar() {
         console.error('Error signing out', error);
         });
     };
-    console.log('Session', session);
-    console.log('Status', status)
+
 
     return (
-        <div className="absolute flex flex-row justify-between items-center w-full mt-5 py-6 px-8 h-10 md:p-10X">
+        <div className="absolute flex flex-row justify-between items-center w-full mt-5 py-6 px-8 h-10 md:px-10">
             <Image 
-                src="/assets/images/logo-gradient.svg" 
+                src="/assets/images/logo-gradient.png" 
                 alt="alt" 
-                width={60} 
-                height={60}
+                width={1000} 
+                height={1000}
                 className="md:w-20 md:h-20"
             />
             
