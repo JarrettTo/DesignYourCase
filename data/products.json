@@ -1,0 +1,76 @@
+[
+  {
+    "productId": 1,
+    "product": "Taobao Shop 1",
+    "brands": [
+      {
+        "name": "Apple",
+        "models": [
+          {
+            "modelName": "iPhone 16 Pro",
+            "variations": [
+              "Colored",
+              " Transparent"
+            ]
+          },
+          {
+            "modelName": "iPhone 16",
+            "variations": [
+              "Colored"
+            ]
+          },
+          {
+            "modelName": "iPhone 15 Pro",
+            "variations": [
+              "Transparent"
+            ]
+          },
+          {
+            "modelName": "iPhone 15",
+            "variations": [
+              "Colored",
+              " Transparent"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "productId": 2,
+    "product": "Taobao Shop 2",
+    "brands": [
+      {
+        "name": "Samsung",
+        "models": [
+          {
+            "modelName": "Samsung Galaxy S24 Ultra",
+            "variations": [
+              "Colored",
+              " Transparent"
+            ]
+          },
+          {
+            "modelName": "Samsung Galaxy S24",
+            "variations": [
+              "Colored"
+            ]
+          },
+          {
+            "modelName": "Samsung Galaxy S23 Ultra",
+            "variations": [
+              "Transparent"
+            ]
+          },
+          {
+            "modelName": "Samsung Galaxy S23",
+            "variations": [
+              "Colored",
+              " Transparent"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

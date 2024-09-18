@@ -2,16 +2,16 @@ import Link from "next/link";
 
 type ItemCardProps = {
     productName: string;
-    link: string;
     index: number;
+    productId: number;
 }
 
-export default function ItemCard({productName, link, index}: ItemCardProps) {
+export default function ItemCard({productName, index, productId}: ItemCardProps) {
     
     return(
     <Link href={{ 
-            pathname: `/product-selection/${index}`, 
-            query: { link } 
+            pathname: `/product-selection/${index}`,
+            query: { productId }
         }}
     >
         <div className="w-[273px] h-auto mx-[50px] px-2 rounded-lg transition-all mb-14 cursor-pointer bg-white hover:drop-shadow-2xl">
