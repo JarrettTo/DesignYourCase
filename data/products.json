@@ -10,7 +10,7 @@
             "modelName": "iPhone 16 Pro",
             "variations": [
               "Colored",
-              " Transparent"
+              "Transparent"
             ]
           },
           {
@@ -29,7 +29,7 @@
             "modelName": "iPhone 15",
             "variations": [
               "Colored",
-              " Transparent"
+              "Transparent"
             ]
           }
         ]
@@ -47,7 +47,7 @@
             "modelName": "Samsung Galaxy S24 Ultra",
             "variations": [
               "Colored",
-              " Transparent"
+              "Transparent"
             ]
           },
           {
@@ -66,7 +66,38 @@
             "modelName": "Samsung Galaxy S23",
             "variations": [
               "Colored",
-              " Transparent"
+              "Transparent"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Apple",
+        "models": [
+          {
+            "modelName": "iPhone 16 Pro",
+            "variations": [
+              "Colored",
+              "Transparent"
+            ]
+          },
+          {
+            "modelName": "iPhone 16",
+            "variations": [
+              "Colored"
+            ]
+          },
+          {
+            "modelName": "iPhone 15 Pro",
+            "variations": [
+              "Transparent"
+            ]
+          },
+          {
+            "modelName": "iPhone 15",
+            "variations": [
+              "Colored",
+              "Transparent"
             ]
           }
         ]
