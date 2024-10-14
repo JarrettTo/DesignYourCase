@@ -46,7 +46,7 @@ const theme = createTheme({
     },
   })
 
-export default function Home() {
+export default function ProductSelect() {
     return (
     <MantineProvider theme={theme}>
         <main className="flex flex-col w-full overflow-x-hidden">
