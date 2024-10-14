@@ -1,7 +1,3 @@
-
-
-import Image from "next/image";
-
 import LandingNavbar from "@/components/landing-navbar";
 import Hero from "@/components/hero";
 import Heading from "@/components/heading"
@@ -11,15 +7,16 @@ import Steps from "@/components/steps"
 import Footer from "@/components/footer"
 
 export default function Home() {
+
   return (
-    <main className="flex flex-col w-full overflow-x-hidden">
-        <LandingNavbar />
-        <Hero />
-        <Heading />
-        <Promo />
-        <Order/>
-        <Steps/>
-        <Footer />
-    </main>
+       <main className="flex flex-col w-full overflow-x-hidden">
+          <LandingNavbar />
+          <Hero />
+          <Heading />
+          <Promo />
+          <Order/>
+          <Steps/>
+          <Footer />
+      </main>
   );
 }
