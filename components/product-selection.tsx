@@ -4,7 +4,7 @@ import Image from "next/image";
 import { Button, Radio, Combobox, InputBase, useCombobox, Input, ColorPicker } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 type Variation = {
     variation: string;
@@ -26,9 +26,22 @@ type Product = {
     brands: Brand[];
 }
 
+// Add interface for selected options
+interface SelectedOptions {
+    type: string;
+    color: string;
+    phoneModel: string;
+}
 
-export default function ProductSelection() {
+// Add interface for component props
+interface ProductSelectionProps {
+    onSubmit?: (options: SelectedOptions) => void;
+}
+
+
+export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const productId = searchParams.get('productId');
 
     const [products, setProducts] = useState<Product[]>([]);
@@ -54,14 +67,41 @@ export default function ProductSelection() {
 
     const form = useForm({
         initialValues: {
-          variation: "",
-          color: ""
+            variation: "",
+            color: "",
+            phoneModel: ""
         },
-
         validate: {
-            color: (value) => selectedVar === "Colored" ? value : "",
+            variation: (value) => value ? null : "Please select a variation",
+            color: (value) => selectedVar === "Colored" ? (value ? null : "Please select a color") : null,
+            phoneModel: (value) => value ? null : "Please select a phone model"
         }
-      });
+    });
+
+    const handleSubmit = (values: typeof form.values) => {
+        /// Create the options object
+        const selectedOptions: SelectedOptions = {
+            type: values.variation,
+            color: values.color,
+            phoneModel: values.phoneModel
+        };
+
+        // Call onSubmit if provided
+        if (onSubmit) {
+            onSubmit(selectedOptions);
+        }
+
+        // Redirect to the editor page with query parameters
+        const queryParams = new URLSearchParams({
+            type: values.variation,
+            color: encodeURIComponent(values.color),
+            phoneModel: encodeURIComponent(values.phoneModel)
+        });
+
+        router.push(`/phone-case-editor?${queryParams.toString()}`);
+    };
+
+
 
     useEffect(() => {
         const getProducts = async () => {
@@ -112,7 +152,7 @@ export default function ProductSelection() {
     }, [selectedVar])
 
     return(
-        <form onSubmit={form.onSubmit((values) => console.log(values))}>
+        <form onSubmit={form.onSubmit(handleSubmit)}>
             <div className="w-full h-full flex flex-col items-center justify-start">
             <div className="w-full bg-white flex flex-row items-start justify-center">
                 <div className="flex flex-col w-full items-center justify-start mx-16">
@@ -120,6 +160,7 @@ export default function ProductSelection() {
 
                     <div className="mt-20 px-10 w-54 flex flex-col justify-end items-center">
                         <Radio.Group
+                            {...form.getInputProps('variation')}
                             value={selectedVar}
                             onChange={(value) => {
                                 setSelectedVar(value);
@@ -145,7 +186,7 @@ export default function ProductSelection() {
                                     setColor(value);
                                     form.setFieldValue('color', value);
                                 }} 
-                                
+                                // {...form.getInputProps('color')}
                             />
                         )}
                     </div>
@@ -191,7 +232,10 @@ export default function ProductSelection() {
                                 <div className="flex flex-col justify-center items-start" key={index}>
                                 {brand.models.map((phone, phoneIndex) => (
                                     <Button 
-                                    onClick={() => handleSelect(phone)} 
+                                    onClick={() => {
+                                        handleSelect(phone);
+                                        form.setFieldValue('phoneModel', phone.modelName);
+                                    }} 
                                     key={phoneIndex}
                                     size="compact-sm" 
                                     className="font-Poppins font-200 my-1"
