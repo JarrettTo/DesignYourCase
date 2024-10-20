@@ -8,6 +8,8 @@ import { useSearchParams } from 'next/navigation';
 import ProductSelection from "@/components/product-selection";
 import PhoneCaseEditor from "@/components/case-editor";
 
+type CaseType = 'Transparent' | 'Colored';
+
 const theme = createTheme({
   colors: {
     'bright-pink': [
@@ -49,26 +51,29 @@ const theme = createTheme({
   },
 })
 
-// Define the type for selected options
 interface SelectedOptions {
-  type: string;
+  type: CaseType;  
   color: string;
   phoneModel: string;
 }
 
-
 export default function ProductSelect() {
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId');
-  
-  const [selectedOptions, setSelectedOptions] = useState({
-    type: '',
+
+  const [selectedOptions, setSelectedOptions] = useState<SelectedOptions>({
+    type: 'Transparent',
     color: '',
     phoneModel: ''
   });
 
   const handleProductSelection = (options: SelectedOptions) => {
-    setSelectedOptions(options);
+    const validType: CaseType = options.type === 'Colored' ? 'Colored' : 'Transparent';
+
+    setSelectedOptions({
+      ...options,
+      type: validType, 
+    });
   };
 
   return (
@@ -81,7 +86,7 @@ export default function ProductSelect() {
             phoneModel={selectedOptions.phoneModel}
           />
         ) : (
-          <ProductSelection onSelection={handleProductSelection} />
+          <ProductSelection onSubmit={handleProductSelection} />
         )}
       </main>
     </MantineProvider>

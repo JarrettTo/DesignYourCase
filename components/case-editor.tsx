@@ -48,12 +48,14 @@ type SelectedShape = {
 
 // Add props type for PhoneCaseEditor
 type PhoneCaseEditorProps = {
-    type: 'transparent' | 'colored';
+    type: 'Transparent' | 'Colored';
     color: string;
     phoneModel: string;
     };
 
 function PhoneCaseEditor({ type, color, phoneModel }: PhoneCaseEditorProps) {
+    phoneModel = phoneModel.split("%20").join(" ");
+    console.log(type, color, phoneModel);
     const stageRef = useRef<Konva.Stage>(null);
     const [action, setAction] = useState<ShapeType | string>(ACTIONS.SELECT);
     const [fillColor, setFillColor] = useState<string>("#ff0000");
@@ -621,7 +623,7 @@ function sendBackward(id: string) {
           onClick={onClick}
         >
           <Layer>
-            {type === 'colored' && (
+            {type === 'Colored' && (
                 <Rect
                     x={0}
                     y={0}
