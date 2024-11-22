@@ -35,6 +35,66 @@ interface ProductSelectionProps {
     onSubmit?: (options: SelectedOptions) => void;
 }
 
+const phoneBrands = [
+    "iPhone",
+    "Huawei",
+    "Vivo",
+    "OPPO",
+    "Xiaomi",
+    "OnePlus",
+    "Redmi",
+    "Honor",
+    "iQOO"
+]
+
+const variations = [
+    "Transparent",
+    "Cream",
+    "Laser Engraving",
+    "Silicone",
+    "Mirror",
+    "Tempered Glass",
+    "Lambskin",
+    "Wheat"
+]
+
+const varImages = [
+    "1.5 mm thickened transparent.png",
+    "cream case.jpg",
+    "imd laser.jpg",
+    "straight edge liquid silicone.png",
+    "mirror case.jpg",
+    "metallic paint tempered glass.png",
+    "soft lambskin.jpg",
+    "wheat case.png"
+]
+
+const brands = [
+    "iPhone",
+    "Huawei",
+    "IQOO",
+    "Vivo",
+    "Oppo",
+    "Xiaomi",
+    "Redmi",
+    "OnePlus",
+    "Honor",
+    "Meizu"
+]
+
+const brandImages = [
+    "iphone.png",
+    "huawei.png",
+    "iqoo.png",
+    "vivo.png",
+    "oppo.png",
+    "xiaomi.png",
+    "redmi.png",
+    "oneplus.png",
+    "honor.png",
+    "meizu.jpg"
+]
+
 export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -42,14 +102,16 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
 
     const [products, setProducts] = useState<Product[]>([]);
     const [currentProduct, setCurrentProduct] = useState<Product>();
-    const [selectedBrand, setSelectedBrand] = useState(null);
-    const [variations, setVariations] = useState<CaseType[]>([]);
+    const [selectedBrand, setSelectedBrand] = useState('');
 
     const [selectedItem, setSelectedItem] = useState<Model | null>(null);
     const [selectedVar, setSelectedVar] = useState<string>('');
+    const [variationLength, setVariationLength] = useState<number>(0);
     const [secondLength, setSecondLength] = useState<number>(0);
     const [secondOptions, setSecondOptions] = useState<string[]>([]);
-    const [varChecked, setVarChecked] = useState(false);
+    const [selectedSecond, setSelectedSecond] = useState("");
+    const [secondOptionImage, setSecondOptionImage] = useState<string[]>([]);
+    const [unavailable, setUnavailable] = useState<string[]>([]);
 
     const [value, setValue] = useState<string | null>(null);
 
@@ -125,27 +187,64 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
         setCurrentProduct(foundProduct);
     }, [products]);
 
-    useEffect(() => {
-        const allVariations: CaseType[] = ['Transparent', 'Colored'];
-        setVariations(allVariations);
-    }, []);
-
-
-    useEffect(() => {
-        if (!selectedItem?.variations.includes(selectedVar)) {
-            setSelectedItem(null)
-        }
-    }, [selectedVar])
 
     useEffect(() => {
         const toggleOptions = () => {
             if (selectedVar === "Silicone") {
-                const tempArray = ["Red", "Orange", "Yellow", "Green", "Blue", "Purple"];
+                const tempArray = ["Matte", "Hawkeye", "Liquid Silicone"];
+                const imageArray = [
+                    "matte edge silicone.png",
+                    "hawkeye matte silicone.png",
+                    "straight edge liquid silicone.png"
+                ];
+                setSecondOptionImage(imageArray);
                 setSecondOptions(tempArray);
                 setSecondLength(3);
             }
             else if (selectedVar === "Full Wrap") {
                 const tempArray = ["Hard Case", "Soft Case"]
+                setSecondOptionImage([]);
+                setSecondOptions(tempArray);
+                setSecondLength(2);
+            }
+            else if (selectedVar === "Transparent") {
+                const tempArray = ["Soft", "Airbag", "1.5 mm Thickened", "Space"];
+                const imageArray = [
+                    "soft transparent.png",
+                    "airbag transparent.jpg",
+                    "1.5 mm thickened transparent.png",
+                    "space transparent.png"
+                ];
+                setSecondOptionImage(imageArray);
+                setSecondOptions(tempArray);
+                setSecondLength(4);
+            }
+            else if (selectedVar === "Transparent with Edges") {
+                const tempArray = ["Matte"];
+                const imageArray = [
+                    "matte edge.png"
+                ];
+                setSecondOptionImage(imageArray);
+                setSecondOptions(tempArray);
+                setSecondLength(1);
+            }
+            else if (selectedVar === "Laser Engraving") {
+                const tempArray = ["IMD Laser", "Laser Engraving"];
+                const imageArray = [
+                    "imd laser.jpg",
+                    "laser engraving case.png"
+                ];
+                setSecondOptionImage(imageArray);
+                setSecondOptions(tempArray);
+                setSecondLength(2);
+            }
+            else if (selectedVar === "Tempered Glass") {
+                const tempArray = ["Metallic paint", "Regular"];
+                const imageArray = [
+                    "metallic paint tempered glass.png",
+                    "tempered glass.jpg"
+                ];
+                setSecondOptionImage(imageArray);
                 setSecondOptions(tempArray);
                 setSecondLength(2);
             }
@@ -157,77 +256,59 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
         toggleOptions();
     }, [selectedVar]);
 
+
+    useEffect(() => {
+        if (selectedVar === "Mirror" || selectedVar === "Wheat" || selectedVar === "Cream" || selectedSecond === "Laser Engraving") {
+            setUnavailable([
+                "Huawei",
+                "IQOO",
+                "Vivo",
+                "Oppo",
+                "Xiaomi",
+                "Redmi",
+                "OnePlus",
+                "Honor",
+                "Meizu"
+            ])
+        }
+        else {
+            setUnavailable([]);
+        }
+    }, [selectedSecond, selectedVar])
+
     return (
         <>
             <form onSubmit={form.onSubmit(handleSubmit)}>
                 <div className="w-full h-full flex flex-col items-center justify-start">
-                    <p className="mt-20 font-Loubag text-[30px] text-[#A594F6]">Choose your case</p>
+                    <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Choose your case</p>
 
                     <SimpleGrid cols={5}>
-                        <div className='flex flex-col items-center justify-center'>
-                            <Image
-                                src="/assets/images/transparent-case.png"
-                                h={200}
-                                w="auto"
-                            />
-                            <Button onClick={(e) => setSelectedVar("Transparent")} className="my-10" variant="filled" size='l' radius='xl' color="#A594F6">
-                                <p className=" font-Loubag text-[15px] text-white">Transparent</p>
-                            </Button>
-                        </div>
-                        <div className='flex flex-col items-center justify-center'>
-                            <Image
-                                src="/assets/images/transparent-case.png"
-                                h={200}
-                                w="auto"
-                            />
-                            <Button onClick={(e) => setSelectedVar("Transparent with Edges")} className="my-10" variant="filled" size='l' radius='xl' color="#A594F6">
-                                <p className=" font-Loubag text-[15px] text-white">Transparent with Edeges</p>
-                            </Button>
-                        </div>
-                        <div className='flex flex-col items-center justify-center'>
-                            <Image
-                                src="/assets/images/transparent-case.png"
-                                h={200}
-                                w="auto"
-                            />
-                            <Button onClick={(e) => setSelectedVar("Silicone")} className="my-10" variant="filled" size='l' radius='xl' color="#A594F6">
-                                <p className=" font-Loubag text-[15px] text-white">Silicone</p>
-                            </Button>
-                        </div>
-                        <div className='flex flex-col items-center justify-center'>
-                            <Image
-                                src="/assets/images/transparent-case.png"
-                                h={200}
-                                w="auto"
-                            />
-                            <Button onClick={(e) => setSelectedVar("Mirror Back")} className="my-10" variant="filled" size='l' radius='xl' color="#A594F6">
-                                <p className=" font-Loubag text-[15px] text-white">Mirror Back</p>
-                            </Button>
-                        </div>
-                        <div className='flex flex-col items-center justify-center'>
-                            <Image
-                                src="/assets/images/transparent-case.png"
-                                h={200}
-                                w="auto"
-                            />
-                            <Button onClick={(e) => setSelectedVar("Full Wrap")} className="my-10" variant="filled" size='l' radius='xl' color="#A594F6">
-                                <p className=" font-Loubag text-[15px] text-white">Full Wrap</p>
-                            </Button>
-                        </div>
+                        {variations?.map((variation, index) => (
+                            <div className='flex flex-col items-center justify-center'>
+                                <Image
+                                    src={varImages.length ? `/assets/phone cases/${varImages[index]}` : "/assets/images/transparent-case.png"}
+                                    h={200}
+                                    w="auto"
+                                />
+                                <Button onClick={(e) => setSelectedVar(variation)} className="my-10" variant="filled" size='l' radius='xl' color={selectedVar === variation ? "#7359b5" : "#A594F6"}>
+                                    <p className=" font-Loubag text-[15px] text-white">{variation}</p>
+                                </Button>
+                            </div>
+                        ))}
                     </SimpleGrid>
 
                     {secondLength > 0 &&
                         <>
-                            <p className="mb-20 font-Loubag text-[30px] text-[#A594F6]">Select a variation</p>
+                            <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Select a variation</p>
                             <SimpleGrid cols={secondLength}>
                                 {secondOptions?.map((option, index) => (
                                     <div className='mx-6 flex flex-col items-center justify-center' key={index}>
                                         <Image
-                                            src="/assets/images/transparent-case.png"
+                                            src={secondOptionImage.length ? `/assets/phone cases/${secondOptionImage[index]}` : "/assets/images/transparent-case.png"}
                                             h={200}
                                             w="auto"
                                         />
-                                        <Button onClick={(e) => setSelectedVar(option)} className="my-10" variant="filled" radius='xl' color="#A594F6">
+                                        <Button onClick={(e) => setSelectedSecond(option)} className="my-10" variant="filled" radius='xl' color={selectedSecond === option ? "#7359b5" : "#A594F6"}>
                                             <p className=" font-Loubag text-[15px] text-white">{option}</p>
                                         </Button>
                                     </div>
@@ -235,6 +316,23 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                             </SimpleGrid>
                         </>
                     }
+
+                    <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Select a Phone Brand and Model</p>
+                    <SimpleGrid cols={5}>
+                        {phoneBrands.map((brand, index) => (
+                            <div key={index} className='flex flex-col items-center justify-end h-60 mx-9'>
+                                <Image
+                                    src={`/assets/images/${brandImages[index]}`}
+                                    w={100}
+                                    fit="contain"
+                                    h={100}
+                                />
+                                <Button disabled={unavailable.includes(brand)} onClick={(e) => setSelectedBrand(brand)} className="my-10" variant="filled" size='l' radius='xl' color={selectedBrand === brand ? "#7359b5" : "#A594F6"}>
+                                    <p className=" font-Loubag text-[15px] text-white">{brand}</p>
+                                </Button>
+                            </div>
+                        ))}
+                    </SimpleGrid>
 
                     <Button type="submit" className="my-10" variant="gradient" size='xl' radius='xl' gradient={{ from: '#FFC3FE', to: '#B5F5FC', deg: 90 }}
                         styles={{
