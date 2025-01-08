@@ -139,8 +139,32 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
             phoneModel: (value) => value ? null : "Please select a phone model"
         }
     });
+    // Update form values when selections change
+    useEffect(() => {
+        if (selectedVar) {
+            form.setFieldValue('variation', selectedVar);
+        }
+    }, [selectedVar]);
+
+    useEffect(() => {
+        if (selectedBrand) {
+            form.setFieldValue('phoneModel', selectedBrand);
+        }
+    }, [selectedBrand]);
+
+    useEffect(() => {
+        if (color) {
+            form.setFieldValue('color', color);
+        }
+    }, [color]);
 
     const handleSubmit = (values: typeof form.values) => {
+
+        if (!values.variation || !values.phoneModel) {
+            console.error('Missing required fields');
+            return;
+        }
+        
         const selectedOptions: SelectedOptions = {
             type: values.variation as CaseType,
             color: values.color,
@@ -158,6 +182,7 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
         });
 
         router.push(`/phone-case-editor?${queryParams.toString()}`);
+        console.log("submitted", selectedOptions);
     };
 
     useEffect(() => {
