@@ -2,6 +2,7 @@
 
 
 import dynamic from 'next/dynamic';
+import { useRouter, useSearchParams } from 'next/navigation';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { TbRectangle } from "react-icons/tb";
@@ -48,14 +49,19 @@ type SelectedShape = {
 
 // Add props type for PhoneCaseEditor
 type PhoneCaseEditorProps = {
-    type: 'Transparent' | 'Colored';
-    color: string;
     phoneModel: string;
-    };
+    caseType: string;
+    caseSecondType: string;
+};
 
-function PhoneCaseEditor({ type, color, phoneModel }: PhoneCaseEditorProps) {
-    phoneModel = phoneModel.split("%20").join(" ");
-    console.log(type, color, phoneModel);
+function PhoneCaseEditor() {
+    const searchParams = useSearchParams();
+
+    const phoneModel = searchParams.get('phoneModel') || '';
+    const caseType = searchParams.get('caseType') || '';
+    const caseSecondType = searchParams.get('caseSecondType') || '';
+
+  console.log(phoneModel, caseType, caseSecondType);
     const stageRef = useRef<Konva.Stage>(null);
     const [action, setAction] = useState<ShapeType | string>(ACTIONS.SELECT);
     const [fillColor, setFillColor] = useState<string>("#ff0000");
@@ -623,7 +629,7 @@ function sendBackward(id: string) {
           onClick={onClick}
         >
           <Layer>
-            {type === 'Colored' && (
+            {/* {type === 'Colored' && (
                 <Rect
                     x={0}
                     y={0}
@@ -631,7 +637,7 @@ function sendBackward(id: string) {
                     height={phoneCaseClip.height}
                     fill={color}
                 />
-            )}
+            )} */}
             {rectangles.map((rect) => (
               <Rect
                 key={rect.id}

@@ -25,9 +25,9 @@ type Product = {
 
 // Add interface for selected options
 interface SelectedOptions {
-    type: CaseType;
-    color: string;
     phoneModel: string;
+    variation: string;
+    secondVar: string;
 }
 
 // Add interface for component props
@@ -130,12 +130,11 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
     const form = useForm({
         initialValues: {
             variation: "",
-            color: "",
-            phoneModel: ""
+            phoneModel: "",
+            secondVar: "",
         },
         validate: {
             variation: (value) => value ? null : "Please select a variation",
-            color: (value) => selectedVar === "Colored" ? (value ? null : "Please select a color") : null,
             phoneModel: (value) => value ? null : "Please select a phone model"
         }
     });
@@ -153,6 +152,18 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
     }, [selectedBrand]);
 
     useEffect(() => {
+        if (selectedVar) {
+            form.setFieldValue('variation', selectedVar);
+        }
+    }, [selectedVar]);
+
+    useEffect(() => {
+        if (selectedSecond) {
+            form.setFieldValue('secondVar', selectedSecond);
+        }
+    }, [selectedSecond]);
+
+    useEffect(() => {
         if (color) {
             form.setFieldValue('color', color);
         }
@@ -166,9 +177,9 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
         }
         
         const selectedOptions: SelectedOptions = {
-            type: values.variation as CaseType,
-            color: values.color,
-            phoneModel: values.phoneModel
+            phoneModel: values.phoneModel,
+            variation: values.variation,
+            secondVar: values.secondVar
         };
 
         if (onSubmit) {
@@ -176,9 +187,9 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
         }
 
         const queryParams = new URLSearchParams({
-            type: values.variation,
-            color: encodeURIComponent(values.color),
-            phoneModel: encodeURIComponent(values.phoneModel)
+            phoneModel: values.phoneModel,
+            caseType: values.variation,
+            caseSecondType: values.secondVar
         });
 
         router.push(`/phone-case-editor?${queryParams.toString()}`);
