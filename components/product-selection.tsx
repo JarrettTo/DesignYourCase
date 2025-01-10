@@ -2,7 +2,7 @@
 
 import { Button, Radio, Combobox, InputBase, useCombobox, Input, ColorPicker, SimpleGrid, Image, Popover } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 type CaseType = 'Transparent' | 'Colored';
@@ -320,6 +320,7 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
 
     return (
         <>
+        <Suspense fallback={<div>Loading...</div>}>
             <form onSubmit={form.onSubmit(handleSubmit)}>
                 <div className="w-full h-full flex flex-col items-center justify-start">
                     <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Choose your case</p>
@@ -388,6 +389,7 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                     </Button>
                 </div>
             </form>
+        </Suspense>
         </>
     )
 }
