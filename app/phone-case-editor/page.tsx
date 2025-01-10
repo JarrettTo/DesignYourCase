@@ -3,6 +3,8 @@
 import { useSearchParams } from 'next/navigation';
 import PhoneCaseEditor from '@/components/case-editor';
 
+
+
 function EditorPage() {
   const searchParams = useSearchParams();
   
@@ -18,8 +20,7 @@ function EditorPage() {
       <PhoneCaseEditor
         type={type as 'Transparent' | 'Colored'}
         color={color}
-        phoneModel={phoneModel}
-      />
+        phoneModel={phoneModel} caseType={''} caseSecondType={''}      />
     </main>
   );
 }

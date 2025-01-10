@@ -52,16 +52,20 @@ type PhoneCaseEditorProps = {
     phoneModel: string;
     caseType: string;
     caseSecondType: string;
+    type: 'Transparent' | 'Colored';
+    color: string;
 };
 
-function PhoneCaseEditor() {
-    const searchParams = useSearchParams();
+function PhoneCaseEditor({ phoneModel, type, color }: PhoneCaseEditorProps) {    
+  
+  const searchParams = useSearchParams();
 
-    const phoneModel = searchParams.get('phoneModel') || '';
-    const caseType = searchParams.get('caseType') || '';
-    const caseSecondType = searchParams.get('caseSecondType') || '';
+    
+    // const phoneModel = searchParams.get('phoneModel') || '';
+    // const caseType = searchParams.get('caseType') || '';
+    // const caseSecondType = searchParams.get('caseSecondType') || '';
 
-  console.log(phoneModel, caseType, caseSecondType);
+  // console.log(phoneModel, caseType, caseSecondType);
     const stageRef = useRef<Konva.Stage>(null);
     const [action, setAction] = useState<ShapeType | string>(ACTIONS.SELECT);
     const [fillColor, setFillColor] = useState<string>("#ff0000");
@@ -630,7 +634,7 @@ function sendBackward(id: string) {
           onClick={onClick}
         >
           <Layer>
-            {/* {type === 'Colored' && (
+            {type === 'Colored' && (
                 <Rect
                     x={0}
                     y={0}
@@ -638,7 +642,7 @@ function sendBackward(id: string) {
                     height={phoneCaseClip.height}
                     fill={color}
                 />
-            )} */}
+            )}
             {rectangles.map((rect) => (
               <Rect
                 key={rect.id}
