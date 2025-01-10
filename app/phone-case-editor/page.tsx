@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PhoneCaseEditor from '@/components/case-editor';
 
@@ -17,10 +18,15 @@ function EditorPage() {
 
   return (
     <main className="flex flex-col w-full min-h-screen">
-      <PhoneCaseEditor
-        type={type as 'Transparent' | 'Colored'}
-        color={color}
-        phoneModel={phoneModel} caseType={''} caseSecondType={''}      />
+      <Suspense fallback={<div>Loading...</div>}>
+        <PhoneCaseEditor
+          type={type as 'Transparent' | 'Colored'}
+          color={color}
+          phoneModel={phoneModel}
+          caseType={''}
+          caseSecondType={''}
+        />
+      </Suspense>
     </main>
   );
 }
