@@ -27,6 +27,7 @@ import {
 import { ACTIONS } from "../constants";
 import useImage from 'use-image';
 import Konva from 'konva';
+import { Node, NodeConfig } from 'konva/lib/Node';
 
 // Define types for the shapes and actions
 type ShapeType = 'RECTANGLE' | 'CIRCLE' | 'ARROW' | 'SCRIBBLE';
@@ -56,8 +57,9 @@ type PhoneCaseEditorProps = {
     color: string;
 };
 
-function PhoneCaseEditor({ phoneModel, type, color }: PhoneCaseEditorProps) {    
+function PhoneCaseEditor({ phoneModel: initialPhoneModel, type, color }: PhoneCaseEditorProps) {    
   
+  const [phoneModel, setPhoneModel] = useState(initialPhoneModel);
   const searchParams = useSearchParams();
 
     
@@ -248,7 +250,7 @@ async function handleExport() {
   zip.file("full_design.png", fullStageBase64, {base64: true});
 
   // Function to export a single node as PNG
-  const exportNodeAsPNG = (node) => {
+  const exportNodeAsPNG = (node: Node<NodeConfig>) => {
     return new Promise((resolve) => {
       const tempStage = new Konva.Stage({
         width: node.width(),
@@ -281,12 +283,12 @@ async function handleExport() {
   };
 
   // Helper function to export shapes
-  const exportShapes = async (shapes, shapeType) => {
+  const exportShapes = async (shapes: string | any[], shapeType: string) => {
     for (let i = 0; i < shapes.length; i++) {
       const shape = stage.findOne(`#${shapes[i].id}`);
       if (shape) {
         const pngData = await exportNodeAsPNG(shape);
-        zip.file(`${shapeType}_${i}.png`, pngData, {base64: true});
+        zip.file(`${shapeType}_${i}.png`, pngData as string, {base64: true});
       }
     }
   };
@@ -482,14 +484,16 @@ function sendBackward(id: string) {
   }
   
 
-  function handleLoad(e) {
-    const file = e.target.files[0];
+  function handleLoad(e: React.ChangeEvent<HTMLInputElement>) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      const file = files[0];
     if (!file) return;
   
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target) {
-        const designData = JSON.parse(event.target.result);
+        const designData = JSON.parse(event.target.result as string);
   
         setRectangles(designData.rectangles || []);
         setCircles(designData.circles || []);
@@ -497,7 +501,7 @@ function sendBackward(id: string) {
         setScribbles(designData.scribbles || []);
   
         // Recreate image objects from base64 data
-        const loadedImages = (designData.images || []).map((imgData) => {
+        const loadedImages = (designData.images || []).map((imgData: { base64: string; }) => {
           if (imgData.base64) {
             const img = new Image();
             img.src = imgData.base64;
@@ -513,10 +517,10 @@ function sendBackward(id: string) {
   }
   
 
-  if (!phoneModel) {
-    // eslint-disable-next-line react/jsx-no-undef
-    return <PhoneCaseSelection onSelect={handleModelSelect} />;
-  }
+  // if (!phoneModel) {
+  //   // eslint-disable-next-line react/jsx-no-undef
+  //   return <PhoneCaseSelection onSelect={handleModelSelect} />;
+  // }
 
   return (
     <div>
