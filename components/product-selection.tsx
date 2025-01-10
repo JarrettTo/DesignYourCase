@@ -28,6 +28,8 @@ interface SelectedOptions {
     phoneModel: string;
     variation: string;
     secondVar: string;
+    type: CaseType;
+    color: string;
 }
 
 // Add interface for component props
@@ -179,7 +181,9 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
         const selectedOptions: SelectedOptions = {
             phoneModel: values.phoneModel,
             variation: values.variation,
-            secondVar: values.secondVar
+            secondVar: values.secondVar,
+            type: values.variation as CaseType, // Assuming variation is the case type
+            color: color
         };
 
         if (onSubmit) {
@@ -189,7 +193,9 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
         const queryParams = new URLSearchParams({
             phoneModel: values.phoneModel,
             caseType: values.variation,
-            caseSecondType: values.secondVar
+            caseSecondType: values.secondVar,
+            type: values.variation,
+            color: color
         });
 
         router.push(`/phone-case-editor?${queryParams.toString()}`);
