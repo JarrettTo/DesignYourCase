@@ -320,11 +320,12 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
 
                     <SimpleGrid cols={5}>
                         {variations?.map((variation, index) => (
-                            <div className='flex flex-col items-center justify-center'>
+                            <div key={index} className='flex flex-col items-center justify-center'>
                                 <Image
                                     src={varImages.length ? `/assets/phone cases/${varImages[index]}` : "/assets/images/transparent-case.png"}
                                     h={200}
                                     w="auto"
+                                    alt={variation}
                                 />
                                 <Button onClick={(e) => setSelectedVar(variation)} className="my-10" variant="filled" size='l' radius='xl' color={selectedVar === variation ? "#7359b5" : "#A594F6"}>
                                     <p className=" font-Loubag text-[15px] text-white">{variation}</p>
