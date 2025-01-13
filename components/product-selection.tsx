@@ -97,6 +97,31 @@ const brandImages = [
     "meizu.jpg"
 ]
 
+const iPhoneModels = [
+    "iPhone12",
+    "iPhone12Pro",
+    "iPhone12ProMax",
+    "iPhone13",
+    "iPhone13Pro",
+    "iPhone13ProMax",
+    "iPhone14",
+    "iPhone14Pro",
+    "iPhone14ProMax",
+]
+
+const iPhoneModelsImages = [
+    "iphone-12/Iphone 12.svg",
+    "iphone-12/Iphone 12 pro.svg",
+    "iphone-12/Iphone 12 pro max.svg",
+    "iphone-13/iPhone 13.svg",
+    "iphone-13/iPhone 13 pro.svg",
+    "iphone-13/iPhone 13 pro max.svg",
+    "iphone-14/iPhone 14.svg",
+    "iphone-14/iPhone 14 pro.svg",
+    "iphone-14/iPhone 14 pro max.svg",
+]
+
+
 export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -108,10 +133,10 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
 
     const [selectedItem, setSelectedItem] = useState<Model | null>(null);
     const [selectedVar, setSelectedVar] = useState<string>('');
-    const [variationLength, setVariationLength] = useState<number>(0);
     const [secondLength, setSecondLength] = useState<number>(0);
     const [secondOptions, setSecondOptions] = useState<string[]>([]);
     const [selectedSecond, setSelectedSecond] = useState("");
+    const [selectedModel, setSelectedModel] = useState("");
     const [secondOptionImage, setSecondOptionImage] = useState<string[]>([]);
     const [unavailable, setUnavailable] = useState<string[]>([]);
 
@@ -177,7 +202,7 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
             console.error('Missing required fields');
             return;
         }
-        
+
         const selectedOptions: SelectedOptions = {
             phoneModel: values.phoneModel,
             variation: values.variation,
@@ -377,6 +402,26 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                             </div>
                         ))}
                     </SimpleGrid>
+
+                    {selectedBrand == "iPhone" &&
+
+                        <SimpleGrid cols={5}>
+                            {iPhoneModels.map((model, index) => (
+                                <div key={index} className='flex flex-col items-center justify-end h-60 mx-9'>
+                                    <Image
+                                        src={`/assets/frames/${iPhoneModelsImages[index]}`}
+                                        w={100}
+                                        fit="contain"
+                                        h={100}
+                                    />
+                                    <Button onClick={(e) => setSelectedModel(model)} className="my-10" variant="filled" size='l' radius='xl' color={selectedModel === model ? "#7359b5" : "#A594F6"}>
+                                        <p className=" font-Loubag text-[15px] text-white">{model}</p>
+                                    </Button>
+                                </div>
+                            ))}
+                        </SimpleGrid>
+
+                    }
 
                     <Button type="submit" className="my-10" variant="gradient" size='xl' radius='xl' gradient={{ from: '#FFC3FE', to: '#B5F5FC', deg: 90 }}
                         styles={{
