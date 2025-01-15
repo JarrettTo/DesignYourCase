@@ -15,6 +15,7 @@ function EditorPage() {
 
   const color = searchParams.get('color') || '#ffffff';
   const phoneModel = searchParams.get('phoneModel') || 'Iphone 12 Pro Max';
+  const modelIndex = searchParams.get('modelIndex') || '0';
 
   return (
     <main className="flex flex-col w-full min-h-screen">
@@ -23,6 +24,7 @@ function EditorPage() {
           type={type as 'Transparent' | 'Colored'}
           color={color}
           phoneModel={phoneModel}
+          modelIndex={modelIndex}
           caseType={''}
           caseSecondType={''}
         />

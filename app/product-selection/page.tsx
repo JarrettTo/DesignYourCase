@@ -83,7 +83,9 @@ export default function ProductSelect() {
           <PhoneCaseEditor
             type={selectedOptions.type}
             color={selectedOptions.color}
-            phoneModel={selectedOptions.phoneModel} caseType={''} caseSecondType={''}          />
+            phoneModel={selectedOptions.phoneModel} caseType={''} caseSecondType={''}
+            modelIndex={'0'}
+          />
         ) : (
           <ProductSelection onSubmit={handleProductSelection} />
         )}

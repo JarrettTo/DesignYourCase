@@ -55,12 +55,27 @@ type PhoneCaseEditorProps = {
     caseSecondType: string;
     type: 'Transparent' | 'Colored';
     color: string;
+    modelIndex: string;
 };
 
-function PhoneCaseEditor({ phoneModel: initialPhoneModel, type, color }: PhoneCaseEditorProps) {    
+const iPhoneModelsImages = [
+  "iphone-12/Iphone 12.svg",
+  "iphone-12/Iphone 12 pro.svg",
+  "iphone-12/Iphone 12 pro max.svg",
+  "iphone-13/iPhone 13.svg",
+  "iphone-13/iPhone 13 pro.svg",
+  "iphone-13/iPhone 13 pro max.svg",
+  "iphone-14/iPhone 14.svg",
+  "iphone-14/iPhone 14 pro.svg",
+  "iphone-14/iPhone 14 pro max.svg",
+]
+
+function PhoneCaseEditor({ phoneModel: initialPhoneModel, type, color, modelIndex }: PhoneCaseEditorProps) {    
   
   const [phoneModel, setPhoneModel] = useState(initialPhoneModel);
   const searchParams = useSearchParams();
+  const index = parseInt(modelIndex, 10);
+  console.log(index, "Case Editor");
 
     
     // const phoneModel = searchParams.get('phoneModel') || '';
@@ -80,7 +95,7 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, type, color }: PhoneCa
     const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
     // Use the phoneModel prop to determine which image to load
-    const [caseImage] = useImage(`/iphone/${phoneModel}.png`);
+    const [caseImage] = useImage(`/assets/frames/${iPhoneModelsImages[index]}`);    
     const strokeColor = "#000";
     const isPainting = useRef(false);
     const currentShapeId = useRef<string | undefined>();
@@ -628,6 +643,9 @@ function sendBackward(id: string) {
 
           </div>
         </div>
+        <div className='flex justify-center items-center w-full h-full pt-20'>
+
+     
         <Stage
           width={phoneCaseClip.width}
           height={phoneCaseClip.height}
@@ -735,6 +753,7 @@ function sendBackward(id: string) {
             />
           </Layer>
         </Stage>
+        </div>
       </div>
     </div>
   );

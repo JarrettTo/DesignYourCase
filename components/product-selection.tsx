@@ -198,13 +198,13 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
 
     const handleSubmit = (values: typeof form.values) => {
 
-        if (!values.variation || !values.phoneModel) {
+        if (!values.variation || !selectedModel) {
             console.error('Missing required fields');
             return;
         }
 
         const selectedOptions: SelectedOptions = {
-            phoneModel: values.phoneModel,
+            phoneModel: selectedModel,
             variation: values.variation,
             secondVar: values.secondVar,
             type: values.variation as CaseType, // Assuming variation is the case type
@@ -215,12 +215,15 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
             onSubmit(selectedOptions);
         }
 
+        const modelIndex = iPhoneModels.indexOf(selectedModel);
+
         const queryParams = new URLSearchParams({
-            phoneModel: values.phoneModel,
+            phoneModel: selectedModel,
             caseType: values.variation,
             caseSecondType: values.secondVar,
             type: values.variation,
-            color: color
+            color: color,
+            modelIndex: modelIndex.toString()
         });
 
         router.push(`/phone-case-editor?${queryParams.toString()}`);
