@@ -15,14 +15,14 @@ import { IoMdTrash } from "react-icons/io";
 import { useRef, useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
-    Arrow,
-    Circle,
-    Layer,
-    Line,
-    Rect,
-    Stage,
-    Transformer,
-    Image as KonvaImage
+  Arrow,
+  Circle,
+  Layer,
+  Line,
+  Rect,
+  Stage,
+  Transformer,
+  Image as KonvaImage
 } from "react-konva";
 import { ACTIONS } from "../constants";
 import useImage from 'use-image';
@@ -32,30 +32,30 @@ import { Node, NodeConfig } from 'konva/lib/Node';
 // Define types for the shapes and actions
 type ShapeType = 'RECTANGLE' | 'CIRCLE' | 'ARROW' | 'SCRIBBLE';
 type Shape = {
-    id: string;
-    x: number;
-    y: number;
-    fillColor: string;
-    width?: number;
-    height?: number;
-    radius?: number;
-    points?: number[];
-    image?: HTMLImageElement;
+  id: string;
+  x: number;
+  y: number;
+  fillColor: string;
+  width?: number;
+  height?: number;
+  radius?: number;
+  points?: number[];
+  image?: HTMLImageElement;
 };
 
 type SelectedShape = {
-    id: string;
-    type: string;
+  id: string;
+  type: string;
 } | null;
 
 // Add props type for PhoneCaseEditor
 type PhoneCaseEditorProps = {
-    phoneModel: string;
-    caseType: string;
-    caseSecondType: string;
-    type: 'Transparent' | 'Colored';
-    color: string;
-    modelIndex: string;
+  phoneModel: string;
+  caseType: string;
+  caseSecondType: string;
+  type: 'Transparent' | 'Colored';
+  color: string;
+  modelIndex: string;
 };
 
 const iPhoneModelsImages = [
@@ -70,47 +70,47 @@ const iPhoneModelsImages = [
   "iphone-14/iPhone 14 pro max.svg",
 ]
 
-function PhoneCaseEditor({ phoneModel: initialPhoneModel, type, color, modelIndex }: PhoneCaseEditorProps) {    
-  
+function PhoneCaseEditor({ phoneModel: initialPhoneModel, type, color, modelIndex }: PhoneCaseEditorProps) {
+
   const [phoneModel, setPhoneModel] = useState(initialPhoneModel);
   const searchParams = useSearchParams();
   const index = parseInt(modelIndex, 10);
   console.log(index, "Case Editor");
 
-    
-    // const phoneModel = searchParams.get('phoneModel') || '';
-    // const caseType = searchParams.get('caseType') || '';
-    // const caseSecondType = searchParams.get('caseSecondType') || '';
+
+  // const phoneModel = searchParams.get('phoneModel') || '';
+  // const caseType = searchParams.get('caseType') || '';
+  // const caseSecondType = searchParams.get('caseSecondType') || '';
 
   // console.log(phoneModel, caseType, caseSecondType);
-    const stageRef = useRef<Konva.Stage>(null);
-    const [action, setAction] = useState<ShapeType | string>(ACTIONS.SELECT);
-    const [fillColor, setFillColor] = useState<string>("#ff0000");
-    const [rectangles, setRectangles] = useState<Shape[]>([]);
-    const [circles, setCircles] = useState<Shape[]>([]);
-    const [arrows, setArrows] = useState<Shape[]>([]);
-    const [scribbles, setScribbles] = useState<Shape[]>([]);
-    const [images, setImages] = useState<Shape[]>([]);
-    const [selectedShape, setSelectedShape] = useState<SelectedShape>(null);
-    const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const stageRef = useRef<Konva.Stage>(null);
+  const [action, setAction] = useState<ShapeType | string>(ACTIONS.SELECT);
+  const [fillColor, setFillColor] = useState<string>("#ff0000");
+  const [rectangles, setRectangles] = useState<Shape[]>([]);
+  const [circles, setCircles] = useState<Shape[]>([]);
+  const [arrows, setArrows] = useState<Shape[]>([]);
+  const [scribbles, setScribbles] = useState<Shape[]>([]);
+  const [images, setImages] = useState<Shape[]>([]);
+  const [selectedShape, setSelectedShape] = useState<SelectedShape>(null);
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
 
-    // Use the phoneModel prop to determine which image to load
-    const [caseImage] = useImage(`/assets/frames/${iPhoneModelsImages[index]}`);    
-    const strokeColor = "#000";
-    const isPainting = useRef(false);
-    const currentShapeId = useRef<string | undefined>();
-    const transformerRef = useRef<Konva.Transformer>(null);
-    const isDraggable = action === ACTIONS.SELECT;
+  // Use the phoneModel prop to determine which image to load
+  const [caseImage] = useImage(`/assets/frames/${iPhoneModelsImages[index]}`);
+  const strokeColor = "#000";
+  const isPainting = useRef(false);
+  const currentShapeId = useRef<string | undefined>();
+  const transformerRef = useRef<Konva.Transformer>(null);
+  const isDraggable = action === ACTIONS.SELECT;
 
-    const phoneCaseClip = {
-        x: 0,
-        y: 0,
-        width: 300,
-        height: 600,
-    };
+  const phoneCaseClip = {
+    x: 0,
+    y: 0,
+    width: 300,
+    height: 600,
+  };
 
 
-function onPointerDown() {
+  function onPointerDown() {
     if (action === ACTIONS.SELECT) return;
 
     const stage = stageRef.current;
@@ -231,18 +231,18 @@ function onPointerDown() {
         );
         break;
       case ACTIONS.SCRIBBLE:
-              setScribbles((scribbles) =>
-                scribbles.map((scribble) => {
-                  if (scribble.id === currentShapeId.current) {
-                    return {
-                      ...scribble,
-                      points: scribble.points ? [...scribble.points, x, y] : [x, y],
-                    };
-                  }
-                  return scribble;
-                })
-              );
-              break;
+        setScribbles((scribbles) =>
+          scribbles.map((scribble) => {
+            if (scribble.id === currentShapeId.current) {
+              return {
+                ...scribble,
+                points: scribble.points ? [...scribble.points, x, y] : [x, y],
+              };
+            }
+            return scribble;
+          })
+        );
+        break;
       default:
         break;
     }
@@ -252,75 +252,75 @@ function onPointerDown() {
     isPainting.current = false;
   }
 
-async function handleExport() {
-  const stage = stageRef.current;
-  if (!stage) return console.log("Stage not defined");
+  async function handleExport() {
+    const stage = stageRef.current;
+    if (!stage) return console.log("Stage not defined");
 
-  // Create a zip file
-  const zip = new JSZip();
+    // Create a zip file
+    const zip = new JSZip();
 
-  // Export the full stage as an image
-  const fullStageUri = stage.toDataURL();
-  const fullStageBase64 = fullStageUri.split(',')[1];
-  zip.file("full_design.png", fullStageBase64, {base64: true});
+    // Export the full stage as an image
+    const fullStageUri = stage.toDataURL();
+    const fullStageBase64 = fullStageUri.split(',')[1];
+    zip.file("full_design.png", fullStageBase64, { base64: true });
 
-  // Function to export a single node as PNG
-  const exportNodeAsPNG = (node: Node<NodeConfig>) => {
-    return new Promise((resolve) => {
-      const tempStage = new Konva.Stage({
-        width: node.width(),
-        height: node.height(),
-        container: document.createElement('div')
+    // Function to export a single node as PNG
+    const exportNodeAsPNG = (node: Node<NodeConfig>) => {
+      return new Promise((resolve) => {
+        const tempStage = new Konva.Stage({
+          width: node.width(),
+          height: node.height(),
+          container: document.createElement('div')
+        });
+        const layer = new Konva.Layer();
+        const clone = node.clone();
+        layer.add(clone);
+        tempStage.add(layer);
+
+        // Ensure the node is centered in the temporary stage
+        clone.position({
+          x: tempStage.width() / 2,
+          y: tempStage.height() / 2
+        });
+        clone.offset({
+          x: clone.width() / 2,
+          y: clone.height() / 2
+        });
+
+        layer.batchDraw();
+
+        setTimeout(() => {
+          const dataURL = tempStage.toDataURL();
+          resolve(dataURL.split(',')[1]);
+          tempStage.destroy();
+        }, 50);
       });
-      const layer = new Konva.Layer();
-      const clone = node.clone();
-      layer.add(clone);
-      tempStage.add(layer);
-      
-      // Ensure the node is centered in the temporary stage
-      clone.position({
-        x: tempStage.width() / 2,
-        y: tempStage.height() / 2
-      });
-      clone.offset({
-        x: clone.width() / 2,
-        y: clone.height() / 2
-      });
-      
-      layer.batchDraw();
-      
-      setTimeout(() => {
-        const dataURL = tempStage.toDataURL();
-        resolve(dataURL.split(',')[1]);
-        tempStage.destroy();
-      }, 50);
-    });
-  };
+    };
 
-  // Helper function to export shapes
-  const exportShapes = async (shapes: string | any[], shapeType: string) => {
-    for (let i = 0; i < shapes.length; i++) {
-      const shape = stage.findOne(`#${shapes[i].id}`);
-      if (shape) {
-        const pngData = await exportNodeAsPNG(shape);
-        zip.file(`${shapeType}_${i}.png`, pngData as string, {base64: true});
+    // Helper function to export shapes
+    const exportShapes = async (shapes: string | any[], shapeType: string) => {
+      for (let i = 0; i < shapes.length; i++) {
+        const shape = stage.findOne(`#${shapes[i].id}`);
+        if (shape) {
+          const pngData = await exportNodeAsPNG(shape);
+          zip.file(`${shapeType}_${i}.png`, pngData as string, { base64: true });
+        }
       }
-    }
-  };
+    };
 
-  // Export all shape types
-  await exportShapes(rectangles, 'rectangle');
-  await exportShapes(circles, 'circle');
-  await exportShapes(arrows, 'arrow');
-  await exportShapes(scribbles, 'scribble');
-  await exportShapes(images, 'image');
+    // Export all shape types
+    await exportShapes(rectangles, 'rectangle');
+    await exportShapes(circles, 'circle');
+    await exportShapes(arrows, 'arrow');
+    await exportShapes(scribbles, 'scribble');
+    await exportShapes(images, 'image');
 
-  // Generate the zip file
-  const content = await zip.generateAsync({type: "blob"});
+    // Generate the zip file
+    const content = await zip.generateAsync({ type: "blob" });
 
-  // Save the zip file
-  saveAs(content, "design_export.zip");
-}
+    // Save the zip file
+    saveAs(content, "design_export.zip");
+  }
 
   function onClick(e: { target: any; }) {
     if (action !== ACTIONS.SELECT) return;
@@ -344,7 +344,7 @@ async function handleExport() {
     }
   }
 
-  function handleShapeClick(e : any) {
+  function handleShapeClick(e: any) {
     e.cancelBubble = true;
     onClick(e);
   }
@@ -356,16 +356,16 @@ async function handleExport() {
 
 
   function bringForward(id: string) {
-  const shape = stageRef.current?.findOne(`#${id}`);
-  shape?.moveUp();
-}
+    const shape = stageRef.current?.findOne(`#${id}`);
+    shape?.moveUp();
+  }
 
-function sendBackward(id: string) {
-  const shape = stageRef.current?.findOne(`#${id}`);
-  shape?.moveDown();
-}
+  function sendBackward(id: string) {
+    const shape = stageRef.current?.findOne(`#${id}`);
+    shape?.moveDown();
+  }
 
-  
+
 
   function handleDelete() {
     if (selectedShape) {
@@ -402,7 +402,7 @@ function sendBackward(id: string) {
 
       transformerRef.current?.nodes([]);
       setSelectedShape(null);
-    } 
+    }
   }
 
   useEffect(() => {
@@ -416,29 +416,29 @@ function sendBackward(id: string) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleDelete, selectedShape, selectedImageId]);
 
-  const handleModelSelect = (model : any) => {
+  const handleModelSelect = (model: any) => {
     setPhoneModel(model);
   };
 
   const handleImageUpload = (e: any) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
-    
+
     reader.onload = (event) => {
       const img = new Image();
       if (event.target) {
         img.src = event.target.result as string;
       }
-  
+
       img.onload = () => {
         const id = uuidv4();
         const maxWidth = phoneCaseClip.width * 0.8; // 80% of canvas width
         const maxHeight = phoneCaseClip.height * 0.8; // 80% of canvas height
-        
+
         const scaledDimensions = scaleImage(img, maxWidth, maxHeight);
-        
+
         setImages((prevImages) => [
           ...prevImages,
           {
@@ -452,12 +452,12 @@ function sendBackward(id: string) {
           },
         ]);
       };
-  
+
       img.onerror = () => {
         console.error("Error loading the image");
       };
     };
-    
+
     reader.readAsDataURL(file);
   };
 
@@ -481,7 +481,7 @@ function sendBackward(id: string) {
         image: undefined // Remove the image object as it can't be serialized
       };
     });
-  
+
     const designData = {
       rectangles,
       circles,
@@ -489,7 +489,7 @@ function sendBackward(id: string) {
       scribbles,
       images: imagesWithBase64,
     };
-  
+
     const json = JSON.stringify(designData);
     const blob = new Blob([json], { type: "application/json" });
     const link = document.createElement("a");
@@ -497,24 +497,24 @@ function sendBackward(id: string) {
     link.download = "design.json";
     link.click();
   }
-  
+
 
   function handleLoad(e: React.ChangeEvent<HTMLInputElement>) {
-      const files = e.target.files;
-      if (!files || files.length === 0) return;
-      const file = files[0];
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const file = files[0];
     if (!file) return;
-  
+
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target) {
         const designData = JSON.parse(event.target.result as string);
-  
+
         setRectangles(designData.rectangles || []);
         setCircles(designData.circles || []);
         setArrows(designData.arrows || []);
         setScribbles(designData.scribbles || []);
-  
+
         // Recreate image objects from base64 data
         const loadedImages = (designData.images || []).map((imgData: { base64: string; }) => {
           if (imgData.base64) {
@@ -524,13 +524,13 @@ function sendBackward(id: string) {
           }
           return imgData;
         });
-  
+
         setImages(loadedImages);
       }
     };
     reader.readAsText(file);
   }
-  
+
 
   // if (!phoneModel) {
   //   // eslint-disable-next-line react/jsx-no-undef
@@ -645,114 +645,114 @@ function sendBackward(id: string) {
         </div>
         <div className='flex justify-center items-center w-full h-full pt-20'>
 
-     
-        <Stage
-          width={phoneCaseClip.width}
-          height={phoneCaseClip.height}
-          ref={stageRef}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onClick={onClick}
-        >
-          <Layer>
-            {type === 'Colored' && (
+
+          <Stage
+            width={phoneCaseClip.width}
+            height={phoneCaseClip.height}
+            ref={stageRef}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onClick={onClick}
+          >
+            <Layer>
+              {type === 'Colored' && (
                 <Rect
-                    x={0}
-                    y={0}
-                    width={phoneCaseClip.width}
-                    height={phoneCaseClip.height}
-                    fill={color}
+                  x={0}
+                  y={0}
+                  width={phoneCaseClip.width}
+                  height={phoneCaseClip.height}
+                  fill={color}
                 />
-            )}
-            {rectangles.map((rect) => (
-              <Rect
-                key={rect.id}
-                id={rect.id}
-                x={rect.x}
-                y={rect.y}
-                width={rect.width}
-                height={rect.height}
-                fill={rect.fillColor}
-                stroke={strokeColor}
-                draggable={isDraggable}
-                onClick={handleShapeClick}
-              />
-            ))}
-            {circles.map((circle) => (
-              <Circle
-                key={circle.id}
-                id={circle.id}
-                x={circle.x}
-                y={circle.y}
-                radius={circle.radius}
-                fill={circle.fillColor}
-                stroke={strokeColor}
-                draggable={isDraggable}
-                onClick={handleShapeClick}
-              />
-            ))}
-            {arrows.map((arrow) => (
-              <Arrow
-                key={arrow.id}
-                id={arrow.id}
-                points={arrow.points || []}
-                fill={arrow.fillColor}
-                stroke={arrow.fillColor}
-                draggable={isDraggable}
-                onClick={handleShapeClick}
-              />
-            ))}
-            {scribbles.map((scribble) => (
-              <Line
-                key={scribble.id}
-                id={scribble.id}
-                points={scribble.points}
-                stroke={scribble.fillColor}
-                strokeWidth={4}
-                draggable={isDraggable}
-                onClick={handleShapeClick}
-              />
-            ))}
-            {images.map((image) => (
-              image.image ? (  // Ensure the image object is defined
-                <KonvaImage
-                  key={image.id}
-                  id={image.id}
-                  image={image.image}  // This should be an HTMLImageElement
-                  x={image.x}
-                  y={image.y}
-                  width={image.width}
-                  height={image.height}
+              )}
+              {rectangles.map((rect) => (
+                <Rect
+                  key={rect.id}
+                  id={rect.id}
+                  x={rect.x}
+                  y={rect.y}
+                  width={rect.width}
+                  height={rect.height}
+                  fill={rect.fillColor}
+                  stroke={strokeColor}
                   draggable={isDraggable}
                   onClick={handleShapeClick}
                 />
-              ) : null  // Don't render if the image is not loaded
-            ))}
+              ))}
+              {circles.map((circle) => (
+                <Circle
+                  key={circle.id}
+                  id={circle.id}
+                  x={circle.x}
+                  y={circle.y}
+                  radius={circle.radius}
+                  fill={circle.fillColor}
+                  stroke={strokeColor}
+                  draggable={isDraggable}
+                  onClick={handleShapeClick}
+                />
+              ))}
+              {arrows.map((arrow) => (
+                <Arrow
+                  key={arrow.id}
+                  id={arrow.id}
+                  points={arrow.points || []}
+                  fill={arrow.fillColor}
+                  stroke={arrow.fillColor}
+                  draggable={isDraggable}
+                  onClick={handleShapeClick}
+                />
+              ))}
+              {scribbles.map((scribble) => (
+                <Line
+                  key={scribble.id}
+                  id={scribble.id}
+                  points={scribble.points}
+                  stroke={scribble.fillColor}
+                  strokeWidth={4}
+                  draggable={isDraggable}
+                  onClick={handleShapeClick}
+                />
+              ))}
+              {images.map((image) => (
+                image.image ? (  // Ensure the image object is defined
+                  <KonvaImage
+                    key={image.id}
+                    id={image.id}
+                    image={image.image}  // This should be an HTMLImageElement
+                    x={image.x}
+                    y={image.y}
+                    width={image.width}
+                    height={image.height}
+                    draggable={isDraggable}
+                    onClick={handleShapeClick}
+                  />
+                ) : null  // Don't render if the image is not loaded
+              ))}
 
-            <Transformer
-              ref={transformerRef}
-              rotateEnabled={true}
-              resizeEnabled={true}
-              enabledAnchors={[
-                'top-left',
-                'top-right',
-                'bottom-left',
-                'bottom-right'
-              ]}
-            />
+              <Transformer
+                ref={transformerRef}
+                rotateEnabled={true}
+                resizeEnabled={true}
+                enabledAnchors={[
+                  'top-left',
+                  'top-right',
+                  'bottom-left',
+                  'bottom-right'
+                ]}
+              />
 
-          </Layer>
-          <Layer>
-            <KonvaImage
-              id="bg"
-              image={caseImage}
-              width={phoneCaseClip.width}
-              height={phoneCaseClip.height}
-              listening={false}
-            />
-          </Layer>
-        </Stage>
+            </Layer>
+            <Layer>
+              <KonvaImage
+                id="bg"
+                image={caseImage}
+                width={phoneCaseClip.width}
+                height={phoneCaseClip.height}
+                listening={false}
+              />
+            </Layer>
+          </Stage>
         </div>
       </div>
     </div>

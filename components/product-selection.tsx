@@ -1,450 +1,270 @@
 'use client'
 
-import { Button, Radio, Combobox, InputBase, useCombobox, Input, ColorPicker, SimpleGrid, Image, Popover } from '@mantine/core';
-import { useForm } from '@mantine/form';
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { SimpleGrid, Image, Box, Text, UnstyledButton, AspectRatio, Center, MantineStyleProp } from '@mantine/core'; // Added MantineStyleProp
+import { useEffect, useRef, useState } from "react";
+import { Suspense } from "react";
 
-type CaseType = 'Transparent' | 'Colored';
-
-type Model = {
-    modelName: string;
-    variations: string[];
-}
-
-type Brand = {
+// --- Interfaces ---
+interface BrandInfo {
     name: string;
-    models: Model[];
+    logo?: string;
+    logoAlt?: string;
+    displayType: 'logo' | 'name' | 'logo-name' | 'logo-subtext';
+    subtext?: string;
 }
 
-type Product = {
-    productId: number;
-    product: string;
-    brands: Brand[];
+interface ChooseBrandScreenProps {
+    onBrandSelect?: (brandName: string) => void;
+    onModelSelect?: (modelName: string) => void; // Add callback for model selection
 }
 
-// Add interface for selected options
-interface SelectedOptions {
-    phoneModel: string;
-    variation: string;
-    secondVar: string;
-    type: CaseType;
-    color: string;
-}
+// --- Data ---
 
-// Add interface for component props
-interface ProductSelectionProps {
-    onSubmit?: (options: SelectedOptions) => void;
-}
-
-const phoneBrands = [
-    "iPhone",
-    "Huawei",
-    "Vivo",
-    "OPPO",
-    "Xiaomi",
-    "OnePlus",
-    "Redmi",
-    "Honor",
-    "iQOO"
-]
-
-const variations = [
-    "Transparent",
-    "Cream",
-    "Laser Engraving",
-    "Silicone",
-    "Mirror",
-    "Tempered Glass",
-    "Lambskin",
-    "Wheat"
-]
-
-const varImages = [
-    "1.5 mm thickened transparent.png",
-    "cream case.jpg",
-    "imd laser.jpg",
-    "straight edge liquid silicone.png",
-    "mirror case.jpg",
-    "metallic paint tempered glass.png",
-    "soft lambskin.jpg",
-    "wheat case.png"
-]
-
-const brands = [
-    "iPhone",
-    "Huawei",
-    "IQOO",
-    "Vivo",
-    "Oppo",
-    "Xiaomi",
-    "Redmi",
-    "OnePlus",
-    "Honor",
-    "Meizu"
-]
-
-const brandImages = [
-    "iphone.png",
-    "huawei.png",
-    "iqoo.png",
-    "vivo.png",
-    "oppo.png",
-    "xiaomi.png",
-    "redmi.png",
-    "oneplus.png",
-    "honor.png",
-    "meizu.jpg"
-]
-
-const iPhoneModels = [
-    "iPhone12",
-    "iPhone12Pro",
-    "iPhone12ProMax",
-    "iPhone13",
-    "iPhone13Pro",
-    "iPhone13ProMax",
-    "iPhone14",
-    "iPhone14Pro",
-    "iPhone14ProMax",
-]
-
-const iPhoneModelsImages = [
-    "iphone-12/Iphone 12.svg",
-    "iphone-12/Iphone 12 pro.svg",
-    "iphone-12/Iphone 12 pro max.svg",
-    "iphone-13/iPhone 13.svg",
-    "iphone-13/iPhone 13 pro.svg",
-    "iphone-13/iPhone 13 pro max.svg",
-    "iphone-14/iPhone 14.svg",
-    "iphone-14/iPhone 14 pro.svg",
-    "iphone-14/iPhone 14 pro max.svg",
-]
+// Ensure these paths are correct for your project
+const phoneBrandsData: BrandInfo[] = [
+    { name: 'Apple', logo: '/assets/images/iphone.png', logoAlt: 'Apple Logo', displayType: 'logo' },
+    { name: 'Huawei', logo: '/assets/images/huawei.png', logoAlt: 'Huawei Logo', displayType: 'logo-name' },
+    { name: 'Samsung', logo: '/assets/images/samsung.png', logoAlt: 'Samsung', displayType: 'name' },
+    { name: 'Xiaomi', logo: '/assets/images/xiaomi.png', logoAlt: 'Xiaomi MI Logo', displayType: 'logo' },
+    { name: 'Oppo', logo: '/assets/images/oppo.png', logoAlt: 'Oppo Logo', displayType: 'logo' },
+    { name: 'Vivo', logo: '/assets/images/vivo.png', logoAlt: 'Vivo Logo', displayType: 'logo' },
+    { name: 'OnePlus', logo: '/assets/images/oneplus.png', logoAlt: 'OnePlus Logo', displayType: 'logo' },
+    { name: 'Honor', logo: '/assets/images/honor.png', logoAlt: 'Honor', displayType: 'name' },
+    { name: 'Realme', logo: '/assets/images/realme.png', logoAlt: 'Realme Logo', displayType: 'logo' },
+    { name: 'Redmi', logo: '/assets/images/redmi.png', logoAlt: 'Redmi Logo', subtext: 'by Xiaomi', displayType: 'logo-subtext' },
+];
 
 
-export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const productId = searchParams.get('productId');
+// Models for each brand (Add more as needed)
+const brandModels: { [key: string]: string[] } = {
+    Apple: [
+        'iPhone 7', 'iPhone 7 Plus', 'iPhone 8', 'iPhone 8 Plus',
+        'iPhone X', 'iPhone XR', 'iPhone XS', 'iPhone XS Max',
+        'iPhone 11', 'iPhone 11 Pro', 'iPhone 11 Pro Max',
+        'iPhone 12 mini', 'iPhone 12', 'iPhone 12 Pro', 'iPhone 12 Pro Max',
+        'iPhone 13 mini', 'iPhone 13', 'iPhone 13 Pro', 'iPhone 13 Pro Max',
+        'iPhone 14', 'iPhone 14 Plus', 'iPhone 14 Pro', 'iPhone 14 Pro Max',
+        'iPhone 15', 'iPhone 15 Plus', 'iPhone 15 Pro', 'iPhone 15 Pro Max',
+    ],
+    Samsung: [
+        'Galaxy S24', 'Galaxy S24+', 'Galaxy S24 Ultra',
+        'Galaxy S23', 'Galaxy S23+', 'Galaxy S23 Ultra', 'Galaxy S23 FE',
+        'Galaxy Z Fold 5', 'Galaxy Z Flip 5',
+        'Galaxy A54', 'Galaxy A34',
+        // Add more Samsung models
+    ],
+    Huawei: [
+        'P60', 'P60 Pro', 'Mate 60', 'Mate 60 Pro', 'Mate X3', 'Nova 11',
+        // Add more Huawei models
+    ],
+    Xiaomi: [
+        'Xiaomi 14', 'Xiaomi 14 Pro', 'Xiaomi 13T', 'Xiaomi 13T Pro', 'Xiaomi 13', 'Xiaomi 13 Lite',
+        // Add more Xiaomi models
+    ],
+    Oppo: [
+        'Find N3', 'Find N3 Flip', 'Find X6 Pro', 'Reno 10 Pro+', 'Reno 10', 'A78',
+        // Add more Oppo models
+    ],
+    Vivo: [
+        'X100 Pro', 'X100', 'X90 Pro', 'V29', 'Y78', 'iQOO 12 Pro', 'iQOO 12',
+        // Add more Vivo/iQOO models
+    ],
+    OnePlus: [
+        'OnePlus 12', 'OnePlus 11', 'OnePlus Open', 'OnePlus Nord 3', 'OnePlus 10T',
+        // Add more OnePlus models
+    ],
+    Honor: [
+        'Magic V2', 'Magic 5 Pro', 'Honor 90', 'Honor X9a',
+        // Add more Honor models
+    ],
+    Realme: [
+        'Realme GT 5 Pro', 'Realme 11 Pro+', 'Realme 11', 'Realme C55',
+        // Add more Realme models
+    ],
+    Redmi: [
+        'Redmi Note 13 Pro+', 'Redmi Note 13', 'Redmi K70 Pro', 'Redmi 12',
+        // Add more Redmi models
+    ],
+    // Add other brands...
+    Default: [], // Fallback for unlisted brands
+};
 
-    const [products, setProducts] = useState<Product[]>([]);
-    const [currentProduct, setCurrentProduct] = useState<Product>();
-    const [selectedBrand, setSelectedBrand] = useState('');
 
-    const [selectedItem, setSelectedItem] = useState<Model | null>(null);
-    const [selectedVar, setSelectedVar] = useState<string>('');
-    const [secondLength, setSecondLength] = useState<number>(0);
-    const [secondOptions, setSecondOptions] = useState<string[]>([]);
-    const [selectedSecond, setSelectedSecond] = useState("");
-    const [selectedModel, setSelectedModel] = useState("");
-    const [secondOptionImage, setSecondOptionImage] = useState<string[]>([]);
-    const [unavailable, setUnavailable] = useState<string[]>([]);
+const AppLogo = () => (
+    <Image src="/assets/images/logo-gradient.png"
+        alt="My App Logo" h={28} w="auto" fit="contain" />
+);
 
-    const [value, setValue] = useState<string | null>(null);
-
-    const [color, setColor] = useState('#ffa1efff');
-
-    const [openedWrap, setOpenedWrap] = useState(false);
-
-    const combobox = useCombobox({
-        onDropdownClose: () => combobox.resetSelectedOption(),
-    });
-
-    const handleSelect = (item: Model) => {
-        setSelectedItem(item);
-    };
-
-    const form = useForm({
-        initialValues: {
-            variation: "",
-            phoneModel: "",
-            secondVar: "",
-        },
-        validate: {
-            variation: (value) => value ? null : "Please select a variation",
-            phoneModel: (value) => value ? null : "Please select a phone model"
-        }
-    });
-    // Update form values when selections change
-    useEffect(() => {
-        if (selectedVar) {
-            form.setFieldValue('variation', selectedVar);
-        }
-    }, [selectedVar]);
+// --- Main Component ---
+export default function ChooseBrandScreen({ onBrandSelect, onModelSelect }: ChooseBrandScreenProps) {
+    const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+    const [selectedModel, setSelectedModel] = useState<string | null>(null); // State for selected model
+    const modelListRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (selectedBrand) {
-            form.setFieldValue('phoneModel', selectedBrand);
+        // Check if a brand IS selected AND the ref is attached to the element
+        if (selectedBrand && modelListRef.current) {
+            modelListRef.current.scrollIntoView({
+                behavior: 'smooth', // Use smooth scrolling
+                block: 'start'     // Align the top of the model list with the top of the viewport
+            });
         }
     }, [selectedBrand]);
 
-    useEffect(() => {
-        if (selectedVar) {
-            form.setFieldValue('variation', selectedVar);
-        }
-    }, [selectedVar]);
+    const handleBrandSelect = (brandName: string) => {
 
-    useEffect(() => {
-        if (selectedSecond) {
-            form.setFieldValue('secondVar', selectedSecond);
-        }
-    }, [selectedSecond]);
-
-    useEffect(() => {
-        if (color) {
-            form.setFieldValue('color', color);
-        }
-    }, [color]);
-
-    const handleSubmit = (values: typeof form.values) => {
-
-        if (!values.variation || !selectedModel) {
-            console.error('Missing required fields');
+        if (selectedBrand === brandName) {
+            setSelectedBrand(null);
+            setSelectedModel(null);
             return;
         }
 
-        const selectedOptions: SelectedOptions = {
-            phoneModel: selectedModel,
-            variation: values.variation,
-            secondVar: values.secondVar,
-            type: values.variation as CaseType, // Assuming variation is the case type
-            color: color
-        };
-
-        if (onSubmit) {
-            onSubmit(selectedOptions);
+        setSelectedBrand(brandName);
+        setSelectedModel(null); // Reset model when brand changes
+        if (onBrandSelect) {
+            onBrandSelect(brandName);
         }
-
-        const modelIndex = iPhoneModels.indexOf(selectedModel);
-
-        const queryParams = new URLSearchParams({
-            phoneModel: selectedModel,
-            caseType: values.variation,
-            caseSecondType: values.secondVar,
-            type: values.variation,
-            color: color,
-            modelIndex: modelIndex.toString()
-        });
-
-        router.push(`/phone-case-editor?${queryParams.toString()}`);
-        console.log("submitted", selectedOptions);
+        console.log("Selected Brand:", brandName);
     };
 
-    useEffect(() => {
-        const getProducts = async () => {
-            try {
-                const response = await fetch('/api/get-products', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const result = await response.json();
-                console.log(result.currentData);
-                setProducts(result.currentData);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-            }
+    const handleModelSelect = (modelName: string) => {
+        setSelectedModel(modelName);
+        if (onModelSelect) {
+            onModelSelect(modelName);
         }
-        getProducts();
-    }, []);
+        console.log("Selected Model:", modelName);
+        // You might navigate or trigger further actions here
+    };
 
-    useEffect(() => {
-        const foundProduct = products.find(product => product.productId.toString() === productId);
-        setCurrentProduct(foundProduct);
-    }, [products]);
-
-
-    useEffect(() => {
-        const toggleOptions = () => {
-            if (selectedVar === "Silicone") {
-                const tempArray = ["Matte", "Hawkeye", "Liquid Silicone"];
-                const imageArray = [
-                    "matte edge silicone.png",
-                    "hawkeye matte silicone.png",
-                    "straight edge liquid silicone.png"
-                ];
-                setSecondOptionImage(imageArray);
-                setSecondOptions(tempArray);
-                setSecondLength(3);
-            }
-            else if (selectedVar === "Full Wrap") {
-                const tempArray = ["Hard Case", "Soft Case"]
-                setSecondOptionImage([]);
-                setSecondOptions(tempArray);
-                setSecondLength(2);
-            }
-            else if (selectedVar === "Transparent") {
-                const tempArray = ["Soft", "Airbag", "1.5 mm Thickened", "Space"];
-                const imageArray = [
-                    "soft transparent.png",
-                    "airbag transparent.jpg",
-                    "1.5 mm thickened transparent.png",
-                    "space transparent.png"
-                ];
-                setSecondOptionImage(imageArray);
-                setSecondOptions(tempArray);
-                setSecondLength(4);
-            }
-            else if (selectedVar === "Transparent with Edges") {
-                const tempArray = ["Matte"];
-                const imageArray = [
-                    "matte edge.png"
-                ];
-                setSecondOptionImage(imageArray);
-                setSecondOptions(tempArray);
-                setSecondLength(1);
-            }
-            else if (selectedVar === "Laser Engraving") {
-                const tempArray = ["IMD Laser", "Laser Engraving"];
-                const imageArray = [
-                    "imd laser.jpg",
-                    "laser engraving case.png"
-                ];
-                setSecondOptionImage(imageArray);
-                setSecondOptions(tempArray);
-                setSecondLength(2);
-            }
-            else if (selectedVar === "Tempered Glass") {
-                const tempArray = ["Metallic paint", "Regular"];
-                const imageArray = [
-                    "metallic paint tempered glass.png",
-                    "tempered glass.jpg"
-                ];
-                setSecondOptionImage(imageArray);
-                setSecondOptions(tempArray);
-                setSecondLength(2);
-            }
-            else {
-                setSecondOptions([]);
-                setSecondLength(0);
-            }
+    // Function to render the brand selection grid
+    const renderBrandItem = (brand: BrandInfo) => {
+        const isSelected = selectedBrand === brand.name;
+        const commonStyles: MantineStyleProp = { /* ... same styles as before ... */ };
+        let content; // ... same content logic as before ...
+        switch (brand.displayType) {
+            case 'logo':
+                content = brand.logo ? ( <Image src={brand.logo} alt={brand.logoAlt || brand.name} h={50} w="auto" fit="contain" /> ) : ( <Text size="lg" fw={500}>{brand.name}</Text> ); break;
+            case 'name':
+                content = <Text size="xl" fw={700} c={isSelected ? '#7359b5' : 'black'}>{brand.name.toUpperCase()}</Text>; break; // Change text color too?
+            case 'logo-name':
+                content = ( <> {brand.logo && <Image src={brand.logo} alt={brand.logoAlt || brand.name} h={40} w="auto" fit="contain" mb={5}/>} <Text size="sm" fw={600} c={isSelected ? '#7359b5' : 'black'} mt="xs">{brand.name.toUpperCase()}</Text> </> ); break;
+             case 'logo-subtext':
+                 content = ( <> {brand.logo && <Image src={brand.logo} alt={brand.logoAlt || brand.name} h={40} w="auto" fit="contain" mb={5} />} <Text size="lg" fw={700} c={isSelected ? '#7359b5' : 'black'}>{brand.name}</Text> {brand.subtext && <Text size="xs" c="dimmed">{brand.subtext}</Text>} </> ); break;
+            default: content = <Text size="lg" fw={500}>{brand.name}</Text>;
         }
-        toggleOptions();
-    }, [selectedVar]);
 
+        return (
+            <UnstyledButton
+                key={brand.name}
+                onClick={() => handleBrandSelect(brand.name)}
+                // Apply styles for selection and hover
+                styles={(theme) => ({
+                    root: {
+                        transition: 'background-color 0.2s ease, border-color 0.2s ease',
+                        borderRadius: '8px',
+                        border: `2px solid ${isSelected ? theme.colors.violet[6] : 'transparent'}`, // Use theme color
+                        backgroundColor: isSelected ? theme.colors.violet[0] : 'transparent', // Light background if selected
+                        '&:hover': {
+                            backgroundColor: !isSelected ? theme.colors.gray[0] : undefined // Hover only if not selected
+                        }
+                    }
+                })}
+                p={0}
+            >
+                <AspectRatio ratio={1 / 1}>
+                    <Center style={commonStyles}>
+                        {content}
+                    </Center>
+                </AspectRatio>
+            </UnstyledButton>
+        );
+    };
 
-    useEffect(() => {
-        if (selectedVar === "Mirror" || selectedVar === "Wheat" || selectedVar === "Cream" || selectedSecond === "Laser Engraving") {
-            setUnavailable([
-                "Huawei",
-                "IQOO",
-                "Vivo",
-                "Oppo",
-                "Xiaomi",
-                "Redmi",
-                "OnePlus",
-                "Honor",
-                "Meizu"
-            ])
-        }
-        else {
-            setUnavailable([]);
-        }
-    }, [selectedSecond, selectedVar])
+     // Function to render the model selection list (highlighting logic is the same)
+     const renderModelList = () => {
+        // Get models, handle null selection - same as before
+        if (!selectedBrand) return null; // Don't render if no brand selected
+        const modelsToList = brandModels[selectedBrand] || brandModels.Default;
+
+        return (
+            // Add margin top for separation, add the ref here!
+            <Box ref={modelListRef} mt="xl" pt="xl">
+                <Text ta="center" size="xl" fw={700} mb={{ base: 'lg', sm: 'xl' }}>
+                    Choose Your Phone Model
+                </Text>
+                <SimpleGrid
+                    cols={2} // Always 2 columns
+                    spacing="sm"
+                    verticalSpacing="md"
+                >
+                    {modelsToList.map((model) => {
+                        const isModelSelected = selectedModel === model;
+                        return (
+                            <UnstyledButton
+                                key={model}
+                                onClick={() => handleModelSelect(model)}
+                                p="xs"
+                                styles={(theme) => ({ // Use styles prop for theme access
+                                    root: {
+                                        borderRadius: '4px',
+                                        backgroundColor: isModelSelected ? theme.colors.violet[0] : 'transparent', // Light purple bg
+                                        transition: 'background-color 0.2s ease',
+                                        '&:hover': {
+                                           backgroundColor: !isModelSelected ? theme.colors.gray[0] : undefined // Hover only if not selected
+                                        }
+                                    }
+                                })}
+                            >
+                                <Text
+                                    ta="left"
+                                    size="sm"
+                                    fw={isModelSelected ? 600 : 400}
+                                    c={isModelSelected ? 'violet.7' : 'black'} // Use theme color
+                                >
+                                    {model}
+                                </Text>
+                            </UnstyledButton>
+                        );
+                    })}
+                </SimpleGrid>
+            </Box>
+        );
+    };
+
 
     return (
-        <>
-            <Suspense fallback={<div>Loading...</div>}>
-                <form onSubmit={form.onSubmit(handleSubmit)}>
-                    <div className="w-full h-full flex flex-col items-center justify-start p-10">
-                        <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Choose your case</p>
+        <Box style={{ margin: 'auto', background: 'white', minHeight: '100vh', width: '100%' }}>
+            {/* Header Section (remains the same) */}
+            <Box style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 15px', borderBottom: '1px solid #f0f0f0', background: 'white', position: 'sticky', top: 0, zIndex: 10 }}>
+                 <Box style={{ display: 'flex', alignItems: 'center', gap: '15px' }}> <AppLogo /> </Box>
+                <Box style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                     {/* <StatusBarIcons /> */}
+                     <Text size="sm" component="a" href="#" c="black" style={{ textDecoration: 'none', fontWeight: 500 }}>Sign in</Text>
+                </Box>
+            </Box>
 
-                        <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }}>
-                            {variations?.map((variation, index) => (
-                                <div key={index} className='flex flex-col items-center justify-center'>
-                                    <Image
-                                        src={varImages.length ? `/assets/phone cases/${varImages[index]}` : "/assets/images/transparent-case.png"}
-                                        h={200}
-                                        w="auto"
-                                        alt={variation}
-                                    />
-                                    <Button onClick={(e) => setSelectedVar(variation)} className="my-10" variant="filled" size='l' radius='xl' color={selectedVar === variation ? "#7359b5" : "#A594F6"}>
-                                        <p className=" font-Loubag text-[15px] text-white">{variation}</p>
-                                    </Button>
-                                </div>
-                            ))}
-                        </SimpleGrid>
-
-                        {secondLength > 0 &&
-                            <>
-                                <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Select a variation</p>
-                                <SimpleGrid cols={{
-                                    base: secondLength % 2 === 0 ? 2 : 1,
-                                    sm: secondLength % 3 === 0 ? 3 : 2,
-                                    md: secondLength % 4 === 0 ? 4 : 3,
-                                    lg: secondLength % 5 === 0 ? 5 : 4,
-                                }}
-
-                                >
-                                    {secondOptions?.map((option, index) => (
-                                        <div className='mx-6 flex flex-col items-center justify-center' key={index}>
-                                            <Image
-                                                src={secondOptionImage.length ? `/assets/phone cases/${secondOptionImage[index]}` : "/assets/images/transparent-case.png"}
-                                                h={200}
-                                                w="auto"
-                                            />
-                                            <Button onClick={(e) => setSelectedSecond(option)} className="my-10" variant="filled" radius='xl' color={selectedSecond === option ? "#7359b5" : "#A594F6"}>
-                                                <p className=" font-Loubag text-[15px] text-white">{option}</p>
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </SimpleGrid>
-                            </>
-                        }
-
-                        <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Select a Phone Brand and Model</p>
-                        <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }}>
-                            {phoneBrands.map((brand, index) => (
-                                <div key={index} className='flex flex-col items-center justify-end h-60 mx-9'>
-                                    <Image
-                                        src={`/assets/images/${brandImages[index]}`}
-                                        w={100}
-                                        fit="contain"
-                                        h={100}
-                                    />
-                                    <Button disabled={unavailable.includes(brand)} onClick={(e) => setSelectedBrand(brand)} className="my-10" variant="filled" size='l' radius='xl' color={selectedBrand === brand ? "#7359b5" : "#A594F6"}>
-                                        <p className=" font-Loubag text-[15px] text-white">{brand}</p>
-                                    </Button>
-                                </div>
-                            ))}
-                        </SimpleGrid>
-
-                        {selectedBrand == "iPhone" &&
-
-                            <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }}>
-                                {iPhoneModels.map((model, index) => (
-                                    <div key={index} className='flex flex-col items-center justify-end h-60 mx-9'>
-                                        <Image
-                                            src={`/assets/frames/${iPhoneModelsImages[index]}`}
-                                            w={100}
-                                            fit="contain"
-                                            h={100}
-                                        />
-                                        <Button onClick={(e) => setSelectedModel(model)} className="my-10" variant="filled" size='l' radius='xl' color={selectedModel === model ? "#7359b5" : "#A594F6"}>
-                                            <p className=" font-Loubag text-[15px] text-white">{model}</p>
-                                        </Button>
-                                    </div>
-                                ))}
-                            </SimpleGrid>
-
-                        }
-
-                        <Button type="submit" className="my-10" variant="gradient" size='xl' radius='xl' gradient={{ from: '#FFC3FE', to: '#B5F5FC', deg: 90 }}
-                            styles={{
-                                root: {
-                                    filter: 'drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1))'
-                                }
-                            }}
+            {/* Content Area: Render BOTH sections, model list conditionally */}
+            <Box p="xl" maw={1200} mx="auto">
+                <Suspense fallback={<div>Loading...</div>}>
+                    {/* Section 1: Brand Grid (Always Rendered) */}
+                    <Box mb="xl"> {/* Add margin below brand grid */}
+                        <Text ta="center" size="xl" fw={700} mb={{ base: 'lg', sm: 'xl' }}>
+                            Choose Your Phone Brand
+                        </Text>
+                        <SimpleGrid
+                            cols={{ base: 2, xs: 3, sm: 4, md: 5 }}
+                            spacing={{ base: 'md', sm: 'lg' }}
+                            verticalSpacing={{ base: 'lg', sm: 'xl' }}
                         >
-                            <p className="drop-shadow-md text-[28px] font-Poppins font-black">Design Your Case</p>
-                        </Button>
-                    </div>
-                </form>
-            </Suspense>
-        </>
-    )
+                            {phoneBrandsData.map(renderBrandItem)}
+                        </SimpleGrid>
+                    </Box>
+
+                    {/* Section 2: Model List (Rendered ONLY if a brand is selected) */}
+                    {selectedBrand && renderModelList()}
+
+                </Suspense>
+            </Box>
+        </Box>
+    );
 }
