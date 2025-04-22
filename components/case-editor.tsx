@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -96,7 +97,8 @@ const iPhoneModelsImages = [
   "iphone-14/iPhone 14 pro max.svg",
 ]
 
-function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondType, type, color, modelIndex }: PhoneCaseEditorProps) {    
+function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondType, type, color, modelIndex }: PhoneCaseEditorProps) {  
+  const { data: session } = useSession();  
   const router = useRouter();
   const [phoneModel, setPhoneModel] = useState(initialPhoneModel);
   const searchParams = useSearchParams();
@@ -517,11 +519,11 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
       if (!designData) {
         throw new Error("Failed to get design data");
       }
-
+  
       // Get the current user (or guest ID if not logged in)
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || 'guest-' + uuidv4();
-
+      const userId = session?.user?.email
+      console.log("Current User: ", userId);
+  
       // 1. Upload the image to Supabase Storage
       const imageFile = await fetch(designData.designImage).then((res) => res.blob());
       const imageFileName = `design-images/${userId}/${uuidv4()}.png`;
@@ -529,35 +531,35 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('phone-case-designs')
         .upload(imageFileName, imageFile);
-
+  
       if (uploadError) {
         throw new Error("Failed to upload design image: " + uploadError.message);
       }
-
+  
       // Get the public URL for the uploaded image
       const { data: { publicUrl } } = supabase.storage
         .from('phone-case-designs')
         .getPublicUrl(imageFileName);
-
+  
       // 2. Save the design data to the database
       const savedDesign: SavedDesign = {
-        user_id: userId,
+        user_id: userId || undefined,
         design_data: designData.designJSON,
         image_url: publicUrl,
         phone_model: phoneModel,
         case_type: `${caseType} ${caseSecondType}`,
         color: color
       };
-
+  
       const { data, error } = await supabase
         .from('designs')
         .insert(savedDesign)
         .select();
-
+  
       if (error) {
         throw new Error("Failed to save design: " + error.message);
       }
-
+  
       // 3. Redirect to dashboard
       router.push('/dashboard');
     } catch (error) {
@@ -633,7 +635,7 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
   return (
     <div>
       <div className="relative w-full h-screen overflow-hidden">
-        <div className="absolute top-0 z-10 w-full py-2">
+        <div className="absolute top-0 z-10 w-full py-2 ">
           <div className="flex justify-center items-center gap-3 py-2 px-3 w-fit mx-auto border shadow-lg rounded-lg">
             <button
               className={
