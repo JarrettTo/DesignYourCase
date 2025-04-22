@@ -348,96 +348,103 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
 
     return (
         <>
-        <Suspense fallback={<div>Loading...</div>}>
-            <form onSubmit={form.onSubmit(handleSubmit)}>
-                <div className="w-full h-full flex flex-col items-center justify-start">
-                    <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Choose your case</p>
+            <Suspense fallback={<div>Loading...</div>}>
+                <form onSubmit={form.onSubmit(handleSubmit)}>
+                    <div className="w-full h-full flex flex-col items-center justify-start p-10">
+                        <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Choose your case</p>
 
-                    <SimpleGrid cols={5}>
-                        {variations?.map((variation, index) => (
-                            <div key={index} className='flex flex-col items-center justify-center'>
-                                <Image
-                                    src={varImages.length ? `/assets/phone cases/${varImages[index]}` : "/assets/images/transparent-case.png"}
-                                    h={200}
-                                    w="auto"
-                                    alt={variation}
-                                />
-                                <Button onClick={(e) => setSelectedVar(variation)} className="my-10" variant="filled" size='l' radius='xl' color={selectedVar === variation ? "#7359b5" : "#A594F6"}>
-                                    <p className=" font-Loubag text-[15px] text-white">{variation}</p>
-                                </Button>
-                            </div>
-                        ))}
-                    </SimpleGrid>
-
-                    {secondLength > 0 &&
-                        <>
-                            <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Select a variation</p>
-                            <SimpleGrid cols={secondLength}>
-                                {secondOptions?.map((option, index) => (
-                                    <div className='mx-6 flex flex-col items-center justify-center' key={index}>
-                                        <Image
-                                            src={secondOptionImage.length ? `/assets/phone cases/${secondOptionImage[index]}` : "/assets/images/transparent-case.png"}
-                                            h={200}
-                                            w="auto"
-                                        />
-                                        <Button onClick={(e) => setSelectedSecond(option)} className="my-10" variant="filled" radius='xl' color={selectedSecond === option ? "#7359b5" : "#A594F6"}>
-                                            <p className=" font-Loubag text-[15px] text-white">{option}</p>
-                                        </Button>
-                                    </div>
-                                ))}
-                            </SimpleGrid>
-                        </>
-                    }
-
-                    <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Select a Phone Brand and Model</p>
-                    <SimpleGrid cols={5}>
-                        {phoneBrands.map((brand, index) => (
-                            <div key={index} className='flex flex-col items-center justify-end h-60 mx-9'>
-                                <Image
-                                    src={`/assets/images/${brandImages[index]}`}
-                                    w={100}
-                                    fit="contain"
-                                    h={100}
-                                />
-                                <Button disabled={unavailable.includes(brand)} onClick={(e) => setSelectedBrand(brand)} className="my-10" variant="filled" size='l' radius='xl' color={selectedBrand === brand ? "#7359b5" : "#A594F6"}>
-                                    <p className=" font-Loubag text-[15px] text-white">{brand}</p>
-                                </Button>
-                            </div>
-                        ))}
-                    </SimpleGrid>
-
-                    {selectedBrand == "iPhone" &&
-
-                        <SimpleGrid cols={5}>
-                            {iPhoneModels.map((model, index) => (
-                                <div key={index} className='flex flex-col items-center justify-end h-60 mx-9'>
+                        <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }}>
+                            {variations?.map((variation, index) => (
+                                <div key={index} className='flex flex-col items-center justify-center'>
                                     <Image
-                                        src={`/assets/frames/${iPhoneModelsImages[index]}`}
-                                        w={100}
-                                        fit="contain"
-                                        h={100}
+                                        src={varImages.length ? `/assets/phone cases/${varImages[index]}` : "/assets/images/transparent-case.png"}
+                                        h={200}
+                                        w="auto"
+                                        alt={variation}
                                     />
-                                    <Button onClick={(e) => setSelectedModel(model)} className="my-10" variant="filled" size='l' radius='xl' color={selectedModel === model ? "#7359b5" : "#A594F6"}>
-                                        <p className=" font-Loubag text-[15px] text-white">{model}</p>
+                                    <Button onClick={(e) => setSelectedVar(variation)} className="my-10" variant="filled" size='l' radius='xl' color={selectedVar === variation ? "#7359b5" : "#A594F6"}>
+                                        <p className=" font-Loubag text-[15px] text-white">{variation}</p>
                                     </Button>
                                 </div>
                             ))}
                         </SimpleGrid>
 
-                    }
+                        {secondLength > 0 &&
+                            <>
+                                <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Select a variation</p>
+                                <SimpleGrid cols={{
+                                    base: secondLength % 2 === 0 ? 2 : 1,
+                                    sm: secondLength % 3 === 0 ? 3 : 2,
+                                    md: secondLength % 4 === 0 ? 4 : 3,
+                                    lg: secondLength % 5 === 0 ? 5 : 4,
+                                }}
 
-                    <Button type="submit" className="my-10" variant="gradient" size='xl' radius='xl' gradient={{ from: '#FFC3FE', to: '#B5F5FC', deg: 90 }}
-                        styles={{
-                            root: {
-                                filter: 'drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1))'
-                            }
-                        }}
-                    >
-                        <p className="drop-shadow-md text-[28px] font-Poppins font-black">Design Your Case</p>
-                    </Button>
-                </div>
-            </form>
-        </Suspense>
+                                >
+                                    {secondOptions?.map((option, index) => (
+                                        <div className='mx-6 flex flex-col items-center justify-center' key={index}>
+                                            <Image
+                                                src={secondOptionImage.length ? `/assets/phone cases/${secondOptionImage[index]}` : "/assets/images/transparent-case.png"}
+                                                h={200}
+                                                w="auto"
+                                            />
+                                            <Button onClick={(e) => setSelectedSecond(option)} className="my-10" variant="filled" radius='xl' color={selectedSecond === option ? "#7359b5" : "#A594F6"}>
+                                                <p className=" font-Loubag text-[15px] text-white">{option}</p>
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </SimpleGrid>
+                            </>
+                        }
+
+                        <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Select a Phone Brand and Model</p>
+                        <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }}>
+                            {phoneBrands.map((brand, index) => (
+                                <div key={index} className='flex flex-col items-center justify-end h-60 mx-9'>
+                                    <Image
+                                        src={`/assets/images/${brandImages[index]}`}
+                                        w={100}
+                                        fit="contain"
+                                        h={100}
+                                    />
+                                    <Button disabled={unavailable.includes(brand)} onClick={(e) => setSelectedBrand(brand)} className="my-10" variant="filled" size='l' radius='xl' color={selectedBrand === brand ? "#7359b5" : "#A594F6"}>
+                                        <p className=" font-Loubag text-[15px] text-white">{brand}</p>
+                                    </Button>
+                                </div>
+                            ))}
+                        </SimpleGrid>
+
+                        {selectedBrand == "iPhone" &&
+
+                            <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }}>
+                                {iPhoneModels.map((model, index) => (
+                                    <div key={index} className='flex flex-col items-center justify-end h-60 mx-9'>
+                                        <Image
+                                            src={`/assets/frames/${iPhoneModelsImages[index]}`}
+                                            w={100}
+                                            fit="contain"
+                                            h={100}
+                                        />
+                                        <Button onClick={(e) => setSelectedModel(model)} className="my-10" variant="filled" size='l' radius='xl' color={selectedModel === model ? "#7359b5" : "#A594F6"}>
+                                            <p className=" font-Loubag text-[15px] text-white">{model}</p>
+                                        </Button>
+                                    </div>
+                                ))}
+                            </SimpleGrid>
+
+                        }
+
+                        <Button type="submit" className="my-10" variant="gradient" size='xl' radius='xl' gradient={{ from: '#FFC3FE', to: '#B5F5FC', deg: 90 }}
+                            styles={{
+                                root: {
+                                    filter: 'drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1))'
+                                }
+                            }}
+                        >
+                            <p className="drop-shadow-md text-[28px] font-Poppins font-black">Design Your Case</p>
+                        </Button>
+                    </div>
+                </form>
+            </Suspense>
         </>
     )
 }
