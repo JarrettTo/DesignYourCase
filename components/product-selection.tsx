@@ -1,9 +1,18 @@
 'use client'
 
-import { SimpleGrid, Image, Box, Text, UnstyledButton, AspectRatio, Center, MantineStyleProp, Card, Group, ActionIcon, Popover, Stack } from '@mantine/core'; // Added MantineStyleProp
+import { SimpleGrid, Image, Box, Text, UnstyledButton, AspectRatio, Center, MantineStyleProp, Card, Group, ActionIcon, Popover, Button } from '@mantine/core';
 import { useEffect, useRef, useState } from "react";
 import { IconChevronDown, IconX } from '@tabler/icons-react';
 import { Suspense } from "react";
+// import Link from 'next/link'; // Link is not needed if using useRouter
+import { useRouter } from 'next/navigation'; // <-- Import useRouter
+
+interface ChooseFlowScreenProps { // Renamed for clarity
+    onBrandSelect?: (brandName: string) => void;
+    onModelSelect?: (modelName: string) => void;
+    onMaterialSelect?: (materialName: string) => void; // Add callback for material
+    onCaseStyleSelect?: (styleName: string) => void;
+}
 
 // --- Interfaces ---
 interface BrandInfo {
@@ -85,11 +94,6 @@ const brandModels: { [key: string]: string[] } = {
     Default: [], // Fallback for unlisted brands
 };
 
-interface ChooseFlowScreenProps { // Renamed for clarity
-    onBrandSelect?: (brandName: string) => void;
-    onModelSelect?: (modelName: string) => void;
-    onMaterialSelect?: (materialName: string) => void; // Add callback for material
-}
 interface CaseMaterialInfo { // Interface for material data
     id: string;
     name: string;
@@ -126,27 +130,51 @@ const caseMaterialsData: CaseMaterialInfo[] = [
     },
 ];
 
+interface CaseStyleInfo { // <--- NEW: Interface for case style data
+    id: string; // Unique identifier (e.g., 'red', 'green')
+    name: string; // Display name (e.g., 'Red', 'Green')
+    imageUrl: string; // Path to the image
+    altText: string; // Alt text for the image
+}
+
+const caseStylesData: CaseStyleInfo[] = [
+    { id: 'red', name: 'Red', imageUrl: '/assets/images/red-case.png', altText: 'Red phone case' }, // Assuming these are generic case images, adjust paths
+    { id: 'green', name: 'Green', imageUrl: '/assets/images/green-case.png', altText: 'Green phone case' },
+    { id: 'blue', name: 'Blue', imageUrl: '/assets/images/blue-case.png', altText: 'Blue phone case' },
+    { id: 'black', name: 'Black', imageUrl: '/assets/images/black-case.png', altText: 'Black phone case' },
+    // Add more styles as needed
+];
+
+// No longer need SelectedOptions or onSubmit prop if handling navigation internally
+
+
 const AppLogo = () => (
     <Image src="/assets/images/logo-gradient.png"
         alt="My App Logo" h={28} w="auto" fit="contain" />
 );
 
 // --- Main Component ---
-export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMaterialSelect }: ChooseFlowScreenProps) {
+// Removed onReadyToEdit and onSubmit props
+export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMaterialSelect, onCaseStyleSelect }: ChooseFlowScreenProps) {
+
+    const router = useRouter(); // <-- Initialize useRouter
+
     const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
     const [selectedModel, setSelectedModel] = useState<string | null>(null);
     const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+    const [selectedCaseStyle, setSelectedCaseStyle] = useState<string | null>(null); // State for style selection
     const [openedPopoverId, setOpenedPopoverId] = useState<string | null>(null);
 
     const modelListRef = useRef<HTMLDivElement>(null);
     const materialListRef = useRef<HTMLDivElement>(null);
+    const caseStyleListRef = useRef<HTMLDivElement>(null); // Ref for style list
 
+    // Scroll effects remain the same
     useEffect(() => {
-        // Check if a brand IS selected AND the ref is attached to the element
         if (selectedBrand && modelListRef.current) {
             modelListRef.current.scrollIntoView({
-                behavior: 'smooth', // Use smooth scrolling
-                block: 'start'     // Align the top of the model list with the top of the viewport
+                behavior: 'smooth',
+                block: 'start'
             });
         }
     }, [selectedBrand]);
@@ -160,69 +188,84 @@ export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMater
         }
     }, [selectedModel]);
 
+    useEffect(() => {
+        if (selectedMaterial && caseStyleListRef.current) {
+            const timer = setTimeout(() => {
+                caseStyleListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [selectedMaterial]);
+
+
+    // Selection handlers remain the same, but ensure they clear downstream state
     const handleBrandSelect = (brandName: string) => {
-
-        if (selectedBrand === brandName) {
-            setSelectedBrand(null);
-            setSelectedModel(null);
-            setOpenedPopoverId(null);
-            return;
-        }
-
-        setSelectedBrand(brandName);
-        setSelectedModel(null); // Reset model when brand changes
+        const newBrand = selectedBrand === brandName ? null : brandName;
+        setSelectedBrand(newBrand);
+        setSelectedModel(null);
+        setSelectedMaterial(null);
+        setSelectedCaseStyle(null);
         setOpenedPopoverId(null);
-        if (onBrandSelect) {
-            onBrandSelect(brandName);
-        }
-        console.log("Selected Brand:", brandName);
+        if (onBrandSelect) onBrandSelect(newBrand || '');
+        console.log("Selected Brand:", newBrand);
     };
 
     const handleModelSelect = (modelName: string) => {
-        setSelectedModel(modelName);
+        const newModel = selectedModel === modelName ? null : modelName;
+        setSelectedModel(newModel);
         setSelectedMaterial(null);
+        setSelectedCaseStyle(null);
         setOpenedPopoverId(null);
-        if (onModelSelect) {
-            onModelSelect(modelName);
-        }
-        console.log("Selected Model:", modelName);
-        // You might navigate or trigger further actions here
+        if (onModelSelect) onModelSelect(newModel || '');
+        console.log("Selected Model:", newModel);
     };
 
     const handleMaterialSelect = (materialId: string) => {
-        setSelectedMaterial(materialId);
+        const newMaterial = selectedMaterial === materialId ? null : materialId;
+        setSelectedMaterial(newMaterial);
+        setSelectedCaseStyle(null);
+        setOpenedPopoverId(null);
         if (onMaterialSelect) {
-            // Find the full material object if needed by the callback
-            const material = caseMaterialsData.find(m => m.id === materialId);
-            if (material) onMaterialSelect(material.name);
+            const material = caseMaterialsData.find(m => m.id === newMaterial);
+            onMaterialSelect(material ? material.name : '');
         }
-        console.log("Selected Material ID:", materialId);
-        // Potential next step: Navigate to editor or show summary
+        console.log("Selected Material ID:", newMaterial);
     };
 
-    // Function to render the brand selection grid
+    const handleCaseStyleSelect = (styleId: string) => {
+        const newStyle = selectedCaseStyle === styleId ? null : styleId;
+        setSelectedCaseStyle(newStyle);
+        if (onCaseStyleSelect) {
+            const style = caseStylesData.find(s => s.id === newStyle);
+            onCaseStyleSelect(style ? style.name : '');
+        }
+        console.log("Selected Case Style ID:", newStyle);
+    };
+
+    // Function to render the brand selection grid (remains the same)
     const renderBrandItem = (brand: BrandInfo) => {
         const isSelected = selectedBrand === brand.name;
-        const commonStyles: MantineStyleProp = { /* ... same styles as before ... */ };
-        let content; // ... same content logic as before ...
+        const commonStyles: MantineStyleProp = {};
+        let content;
         switch (brand.displayType) {
             case 'logo':
                 content = brand.logo ? (<Image src={brand.logo} alt={brand.logoAlt || brand.name} h={50} w="auto" fit="contain" />) : (<Text size="lg" fw={500}>{brand.name}</Text>); break;
+            default:
+                content = (<Text size="lg" fw={500}>{brand.name}</Text>);
         }
 
         return (
             <UnstyledButton
                 key={brand.name}
                 onClick={() => handleBrandSelect(brand.name)}
-                // Apply styles for selection and hover
                 styles={(theme) => ({
                     root: {
                         transition: 'background-color 0.2s ease, border-color 0.2s ease',
                         borderRadius: '8px',
-                        border: `2px solid ${isSelected ? theme.colors.violet[6] : 'transparent'}`, // Use theme color
-                        backgroundColor: isSelected ? theme.colors.violet[0] : 'transparent', // Light background if selected
+                        border: `2px solid ${isSelected ? theme.colors.violet[6] : 'transparent'}`,
+                        backgroundColor: isSelected ? theme.colors.violet[0] : 'transparent',
                         '&:hover': {
-                            backgroundColor: !isSelected ? theme.colors.gray[0] : undefined // Hover only if not selected
+                            backgroundColor: !isSelected ? theme.colors.gray[0] : undefined
                         }
                     }
                 })}
@@ -237,20 +280,18 @@ export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMater
         );
     };
 
-    // Function to render the model selection list (highlighting logic is the same)
+    // Function to render the model selection list (remains the same)
     const renderModelList = () => {
-        // Get models, handle null selection - same as before
-        if (!selectedBrand) return null; // Don't render if no brand selected
+        if (!selectedBrand) return null;
         const modelsToList = brandModels[selectedBrand] || brandModels.Default;
 
         return (
-            // Add margin top for separation, add the ref here!
             <Box ref={modelListRef} mt="xl" pt="xl">
                 <Text ta="center" size="xl" fw={700} mb={{ base: 'lg', sm: 'xl' }}>
                     Choose Your Phone Model
                 </Text>
                 <SimpleGrid
-                    cols={2} // Always 2 columns
+                    cols={2}
                     spacing="sm"
                     verticalSpacing="md"
                 >
@@ -261,13 +302,13 @@ export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMater
                                 key={model}
                                 onClick={() => handleModelSelect(model)}
                                 p="xs"
-                                styles={(theme) => ({ // Use styles prop for theme access
+                                styles={(theme) => ({
                                     root: {
                                         borderRadius: '4px',
-                                        backgroundColor: isModelSelected ? theme.colors.violet[0] : 'transparent', // Light purple bg
+                                        backgroundColor: isModelSelected ? theme.colors.violet[0] : 'transparent',
                                         transition: 'background-color 0.2s ease',
                                         '&:hover': {
-                                            backgroundColor: !isModelSelected ? theme.colors.gray[0] : undefined // Hover only if not selected
+                                            backgroundColor: !isModelSelected ? theme.colors.gray[0] : undefined
                                         }
                                     }
                                 })}
@@ -276,7 +317,7 @@ export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMater
                                     ta="left"
                                     size="sm"
                                     fw={isModelSelected ? 600 : 400}
-                                    c={isModelSelected ? 'violet.7' : 'black'} // Use theme color
+                                    c={isModelSelected ? 'violet.7' : 'black'}
                                 >
                                     {model}
                                 </Text>
@@ -288,27 +329,25 @@ export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMater
         );
     };
 
+    // Function to render the material list (remains the same)
     const renderMaterialList = () => {
-        if (!selectedModel) return null; // Only render if a model is selected
+        if (!selectedModel) return null;
 
         return (
-            // Attach ref, add spacing
             <Box ref={materialListRef} mt="xl" pt="xl">
                 <Text ta="center" size="xl" fw={700} mb={{ base: 'lg', sm: 'xl' }}>
                     Choose Your Case Material
                 </Text>
-                {/* ---- Add a centering Box with maxWidth for desktop ---- */}
-                <Box maw={1000} mx="auto"> {/* Limit width and center */}
+                <Box maw={1000} mx="auto">
                     <SimpleGrid
-                         cols={{ base: 2, sm: 3, md: 4 }}
-                         spacing="lg"
-                         verticalSpacing="lg"
+                        cols={{ base: 2, sm: 3, md: 4 }}
+                        spacing="lg"
+                        verticalSpacing="lg"
                     >
                         {caseMaterialsData.map((material) => {
                             const isMaterialSelected = selectedMaterial === material.id;
                             const isPopoverOpen = openedPopoverId === material.id;
                             return (
-                                // Card rendering logic remains the same
                                 <Card
                                     padding={0}
                                     radius="lg"
@@ -357,7 +396,7 @@ export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMater
                                                     radius="xl"
                                                     size="md"
                                                     onClick={(event) => {
-                                                        event.stopPropagation(); // IMPORTANT: Prevent card onClick
+                                                        event.stopPropagation();
                                                         setOpenedPopoverId(isPopoverOpen ? null : material.id);
                                                     }}
                                                 >
@@ -366,20 +405,17 @@ export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMater
                                             </Popover.Target>
 
                                             <Popover.Dropdown p="md">
-                                                {/* Use Group for horizontal layout */}
                                                 <Group gap="sm" align="flex-start" wrap="nowrap">
-                                                    {/* Left Side: Circled X Icon */}
                                                     <ActionIcon
-                                                        variant="outline" // Gives the circle border
+                                                        variant="outline"
                                                         color="gray"
-                                                        radius="xl"      // Makes it circular
-                                                        size="sm"        // Control icon size
-                                                        onClick={(event) => {event.stopPropagation();; setOpenedPopoverId(null);}} // Close action
+                                                        radius="xl"
+                                                        size="sm"
+                                                        onClick={(event) => { event.stopPropagation(); setOpenedPopoverId(null); }}
                                                         aria-label="Close description"
                                                     >
-                                                        <IconX size={14} /> {/* Adjust icon size if needed */}
+                                                        <IconX size={14} />
                                                     </ActionIcon>
-
                                                     <Text size="sm" lh={1.4} style={{ flex: 1 }}>
                                                         {material.description}
                                                     </Text>
@@ -391,10 +427,110 @@ export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMater
                             );
                         })}
                     </SimpleGrid>
-                </Box> {/* ---- End of centering Box ---- */}
+                </Box>
             </Box>
         );
     };
+
+    // Render function for Case Style List (remains the same)
+    const renderCaseStyleList = () => {
+        // Only render if a material is selected
+        if (!selectedMaterial) return null;
+
+        return (
+            // Attach ref and add spacing
+            <Box ref={caseStyleListRef} mt="xl" pt="xl">
+                <Text ta="center" size="xl" fw={700} mb={{ base: 'lg', sm: 'xl' }}>
+                    Choose Your Case Style
+                </Text>
+                {/* Use a SimpleGrid for the 2x2 layout */}
+                <SimpleGrid
+                    cols={2} // Force 2 columns as shown in the image
+                    spacing="lg"
+                    verticalSpacing="lg"
+                    maw={400} // Optional: Limit width for better presentation if desired
+                    mx="auto" // Center the grid
+                >
+                    {caseStylesData.map((style) => {
+                        const isStyleSelected = selectedCaseStyle === style.id; // Correct variable here
+                        return (
+                            // Use Card for a similar look to the material list, or a simple UnstyledButton
+                            // Card provides padding and rounded corners easily.
+                            <Card
+                                key={style.id}
+                                padding="sm" // Add some internal padding
+                                radius="md" // Rounded corners like the image
+                                withBorder={isStyleSelected} // Add border if selected
+                                style={(theme) => ({
+                                    borderColor: isStyleSelected ? theme.colors.violet[6] : undefined,
+                                    borderWidth: isStyleSelected ? '2px' : '1px', // Make border a bit thicker when selected
+                                    cursor: 'pointer',
+                                    transition: 'border-color 0.2s ease, background-color 0.2s ease',
+                                    backgroundColor: isStyleSelected ? theme.colors.violet[0] : 'transparent', // Light background if selected
+                                    // Hover effect if not selected
+                                    '&:hover': {
+                                        // FIX IS HERE: Use !isStyleSelected instead of !isSelected
+                                        backgroundColor: !isStyleSelected ? theme.colors.gray[0] : undefined,
+                                    },
+                                    display: 'flex', // Use flexbox for stacking image and text
+                                    flexDirection: 'column', // Stack items vertically
+                                    alignItems: 'center', // Center content horizontally
+                                })}
+                                onClick={() => handleCaseStyleSelect(style.id)}
+                            >
+                                {/* Use Card.Section for the image area */}
+                                <Card.Section>
+                                    <AspectRatio ratio={1 / 1} style={{ width: '100%' }}>
+                                        <Image
+                                            src={style.imageUrl}
+                                            alt={style.altText}
+                                            fit="contain" // or 'cover' depending on desired look
+                                            fallbackSrc="/path/to/placeholder-style.png" // Use a real fallback if possible
+                                        />
+                                    </AspectRatio>
+                                </Card.Section>
+                                {/* Text label below the image */}
+                                <Text size="sm" mt="xs" ta="center" fw={isStyleSelected ? 600 : 400}>
+                                    {style.name}
+                                </Text>
+                            </Card>
+                        );
+                    })}
+                </SimpleGrid>
+            </Box>
+        );
+    };
+
+
+    // Check if all required selections are made
+    // Updated: Now includes selectedCaseStyle
+    const isReadyToEdit = selectedBrand !== null && selectedModel !== null && selectedMaterial !== null && selectedCaseStyle !== null;
+
+    // Function to handle navigation when the button is clicked
+    const handleProceedToEditor = () => {
+        // This function is called directly by the button
+        // Check if all selections are actually made (should be true if button is visible)
+        if (selectedBrand && selectedModel && selectedMaterial && selectedCaseStyle) {
+            // Construct the URL with query parameters
+            const queryParams = new URLSearchParams();
+            queryParams.append('brand', selectedBrand);
+            queryParams.append('model', selectedModel);
+            queryParams.append('material', selectedMaterial);
+            queryParams.append('style', selectedCaseStyle);
+
+            const url = `/phone-case-editor?${queryParams.toString()}`;
+
+            console.log('Navigating to editor with:', url);
+
+            // Use Next.js router to navigate
+            router.push(url);
+
+        } else {
+            console.warn('Attempted to navigate without full selection.');
+            // Optionally show an error message
+        }
+    };
+
 
     return (
         <Box style={{ margin: 'auto', background: 'white', minHeight: '100vh', width: '100%' }}>
@@ -410,7 +546,7 @@ export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMater
             <Box p="xl" maw={1200} mx="auto">
                 <Suspense fallback={<div>Loading...</div>}>
                     {/* Section 1: Brand Grid (Always Rendered) */}
-                    <Box mb="xl"> {/* Add margin below brand grid */}
+                    <Box mb="xl">
                         <Text ta="center" size="xl" fw={700} mb={{ base: 'lg', sm: 'xl' }}>
                             Choose Your Phone Brand
                         </Text>
@@ -426,7 +562,35 @@ export default function ChooseFlowScreen({ onBrandSelect, onModelSelect, onMater
                     {/* Section 2: Model List (Rendered ONLY if a brand is selected) */}
                     {selectedBrand && renderModelList()}
 
+                    {/* Section 3: Material List (Rendered ONLY if a model is selected) */}
                     {selectedModel && renderMaterialList()}
+
+                    {/* Section 4: Case Style List (Rendered ONLY if a material is selected) */}
+                    {selectedMaterial && renderCaseStyleList()}
+
+                    {/* ---- Button to Proceed (Rendered ONLY if all selections are made) ---- */}
+                    {isReadyToEdit && (
+                        <Box mt="xl" pb="xl" ta="center">
+                            <Button
+                                type="button" // Use type="button" unless it's part of a form
+                                className="my-10" // Tailwind class
+                                variant="gradient" // Mantine variant
+                                size='xl' // Mantine size
+                                radius='xl' // Mantine radius
+                                gradient={{ from: '#FFC3FE', to: '#B5F5FC', deg: 90 }} // Mantine gradient
+                                styles={{
+                                    root: {
+                                        filter: 'drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1))'
+                                    }
+                                }}
+                                // Call the internal navigation function directly
+                                onClick={handleProceedToEditor}
+                            >
+                                <p className="drop-shadow-md text-[28px] font-Poppins font-black">Design Your Case</p>
+                            </Button>
+                        </Box>
+                    )}
+                    {/* ---- END Button ---- */}
 
                 </Suspense>
             </Box>

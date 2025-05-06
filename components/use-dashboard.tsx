@@ -1,210 +1,197 @@
-'use client'
+'use client'; // Ensure this is at the very top
 
-import { useEffect, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
-import { type } from "os";
-import { Stage, Layer, Rect, Circle, Arrow, Line, Transformer, Image as KonvaImage } from "react-konva";
-import Konva from "konva";
-import useImage from "use-image";
+import { createClient } from '@supabase/supabase-js';
+// import { notFound } from 'next/navigation'; // notFound is typically for Server Components hitting specific routes
+import { Box, Title, Text, Loader, Button as MantineButton } from '@mantine/core'; // Added Loader and MantineButton
+import { useSession } from 'next-auth/react' // Keep useSession
 
-const phoneCaseClip = {
-    x: 0,
-    y: 0,
-    width: 300,
-    height: 600,
-};
+// Import the DesignDisplay component
+import DesignDisplay from '@/components/design-display'; // Adjust path as needed
+import { useEffect, useState } from 'react';
 
-type DesignData = {
-    rectangles?: Konva.RectConfig[];
-    circles?: Konva.CircleConfig[];
-    arrows?: Konva.ArrowConfig[];
-    scribbles?: Konva.LineConfig[];
-    images?: { base64: string }[];
+interface LoadedScribble {
+    id: string;
+    x: number;
+    y: number;
+    points: number[];
+    fillColor: string; // Stroke color
 }
 
-export default function UserDashboard() {
-    const stageRef = useRef<Konva.Stage>(null);
-    const { data: session, status } = useSession();
-    const [designs, setDesigns] = useState<
-        { design_file: JSON; phone_model?: string, user_email?: string } | null
-    >();
-    const [rectangles, setRectangles] = useState<Konva.RectConfig[]>([]);
-    const [circles, setCircles] = useState<Konva.CircleConfig[]>([]);
-    const [arrows, setArrows] = useState<Konva.ArrowConfig[]>([]);
-    const [scribbles, setScribbles] = useState<Konva.LineConfig[]>([]);
-    const [images, setImages] = useState<
-        { id: string; base64: string; image: HTMLImageElement; x: number; y: number; width: number; height: number }[]
-    >([]);
-    const [caseImage, setCaseImage] = useState<HTMLImageElement>();
-    const [phoneModel, setPhoneModel] = useState<string | null>(null);
-    const [imageElement, setImageElement] = useState<HTMLImageElement | null>(null);
-    const strokeColor = "#000";
+interface LoadedImage {
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    base64: string; // Base64 data for the image
+    rotation?: number; // Include rotation if you saved it
+}
 
-    const fetchDesigns = async () => {
-        if (session?.user?.email) {
-            const res = await fetch("/api/get-saved-cases", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    email: session.user.email,
-                }),
+interface LoadedTextElement {
+    id: string;
+    x: number;
+    y: number;
+    fontSize: number;
+    text: string;
+    fontFamily: string;
+    fill: string;
+    rotation?: number; // Include rotation if you saved it
+}
+
+interface LoadedDesignData {
+    scribbles: LoadedScribble[];
+    images: LoadedImage[];
+    textElements: LoadedTextElement[];
+}
+
+
+interface FetchedDesign {
+    id: string;
+    created_at: string; 
+    user_id: string | null; 
+    design_data: LoadedDesignData;
+    image_url: string; 
+    phone_model: string;
+    case_material: string;
+    case_style: string; 
+}
+
+
+// It doesn't need to accept 'email' as a prop, it gets it from useSession
+export default function DesignListPage() { // Renamed component to reflect it lists designs
+    const { data: session, status } = useSession(); // Get session and loading status
+
+    // State to hold the array of fetched designs
+    const [designs, setDesigns] = useState<FetchedDesign[]>([]);
+    const [isLoading, setIsLoading] = useState(true); // State to manage loading feedback
+    const [error, setError] = useState<string | null>(null); // State to manage fetch errors
+
+
+    // Function to fetch designs from your API route
+    const getCases = async (userEmail: string | undefined | null) => {
+        setIsLoading(true);
+        setError(null); // Clear previous errors
+        try {
+            const response = await fetch('/api/get-saved-cases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                // Send the user's email in the request body
+                body: JSON.stringify({ email: userEmail }),
             });
 
-            const result = await res.json();
-            console.log(result.design);
-            setDesigns(result.design[0]);
-            if (result.design[0].phone_model) {
-                setPhoneModel(result.design[0].phone_model);
+            if (!response.ok) {
+                 const errorData = await response.json();
+                 throw new Error(errorData.message || 'Failed to fetch designs');
             }
+
+            // Your API route should return an array of design objects
+            const result: FetchedDesign[] = await response.json();
+            console.log("Fetched Designs:", result);
+
+            setDesigns(result); // Update state with the fetched array
+
+        } catch (err: any) {
+            console.error('Error fetching designs:', err);
+            setError(err.message || 'Failed to load designs.'); // Store error message
+            setDesigns([]); // Clear designs on error
+        } finally {
+            setIsLoading(false); // End loading
         }
     }
 
+    // useEffect to trigger data fetching when the session email is available
     useEffect(() => {
-        if (phoneModel) {
-            const loadImage = new window.Image();
-            loadImage.crossOrigin = "Anonymous";
-            loadImage.src = phoneModel;
-            loadImage.onload = () => setImageElement(loadImage);
+        // Fetch designs ONLY when the session status is authenticated AND the email is available
+        if (status === 'authenticated' && session?.user?.email) {
+            getCases(session.user.email);
+        } else if (status === 'unauthenticated') {
+             // If not authenticated, clear designs and stop loading
+            setDesigns([]);
+            setIsLoading(false);
+             setError('Please sign in to view your saved designs.'); // Show message for unauthenticated
         }
-    }, [phoneModel]);
+        // If status is 'loading', do nothing, wait for it to become authenticated/unauthenticated
 
-    useEffect(() => {
-        if (imageElement) {
-            setCaseImage(imageElement);
-        }
-    }, [imageElement]);
+    }, [session, status]); // Depend on session and status changes
 
-    useEffect(() => {
-        fetchDesigns();
-    }, [session]);
+    // --- Render Logic ---
 
-    function handleLoad() {
-
-        if (designs) {
-            const designData = designs.design_file as DesignData;
-            setRectangles(designData.rectangles || []);
-            setCircles(designData.circles || []);
-            setArrows(designData.arrows || []);
-            setScribbles(designData.scribbles || []);
-
-            const loadedImages = (designData.images || []).map((imgData: { base64: string }) => {
-                const img = new Image();
-                img.src = imgData.base64;
-
-                return {
-                    id: crypto.randomUUID(), // Generate a unique ID
-                    base64: imgData.base64,
-                    image: img,
-                    x: 200, // Set a default random position
-                    y: 200,
-                    width: 100, // Default width
-                    height: 100, // Default height
-                };
-            });
-
-            setImages(loadedImages);
-        }
+    // Show loading state
+    if (isLoading) {
+        return (
+            <Box p="xl" ta="center">
+                <Loader size="lg" />
+                <Text mt="md">Loading designs...</Text>
+            </Box>
+        );
     }
 
-    useEffect(() => {
-        handleLoad();
-    }, [designs])
+    // Show error message
+    if (error) {
+         return (
+            <Box p="xl" ta="center">
+                <Title order={2}>Error</Title>
+                <Text>{error}</Text>
+                 {/* Optional: Button to retry fetching */}
+                 {status === 'authenticated' && session?.user?.email && (
+                     <MantineButton onClick={() => getCases(session?.user?.email)} mt="lg">Retry Loading</MantineButton>
+                 )}
+            </Box>
+         );
+    }
 
+    // Show message if no designs are found after loading
+    if (designs.length === 0 && status === 'authenticated') {
+         return (
+            <Box p="xl" ta="center">
+                <Title order={2}>No Designs Found</Title>
+                <Text>It looks like you haven't saved any designs yet.</Text>
+                 {/* Optional: Button to go create a design */}
+                 <MantineButton component="a" href="/" mt="lg">Create a Design</MantineButton> {/* Adjust '/' to your selection page path */}
+            </Box>
+         );
+    }
+
+     // Show message if user is not signed in
+     if (status === 'unauthenticated') {
+         return (
+             <Box p="xl" ta="center">
+                 <Title order={2}>Sign In Required</Title>
+                 <Text>Please sign in to view your saved designs.</Text>
+                 {/* Optional: Add a sign-in button if you have one */}
+                 {/* <MantineButton onClick={() => signIn('google')} mt="lg">Sign In</MantineButton> */}
+             </Box>
+         );
+     }
+
+
+    // If not loading, no error, and designs exist, map over them
     return (
-        <div className="w-full h-screen flex flex-col items-center justify-start">
-            <div className="w-full h-1/6 bg-[#7359b5] flex flex-col items-center justify-center">
-                <p className="drop-shadow-md text-[28px] text-white font-Poppins font-black">User Dashboard</p>
-            </div>
+        <Box p="xl"> {/* Use a layout box for the entire list page */}
+            <Title order={1} ta="center" mb="xl">My Saved Designs</Title>
 
-            <div className='flex justify-start items-start w-full h-full p-20'>
+            {/* Iterate over the designs array and render DesignDisplay for each */}
+            {designs.map((designItem) => (
+                // Use a key prop for each item when mapping over arrays
+                <Box key={designItem.id} mb="xl" pb="xl" style={{ borderBottom: '1px solid #eee' }}> {/* Add styling for separation */}
+                    {/* Display some info about the design item */}
+                     <Text ta="center" size="lg" mb="md" fw={600}>
+                         {designItem.phone_model} | {designItem.case_material} | {designItem.case_style}
+                     </Text>
+                     {/* You could also display created_at, etc. */}
+                     {/* <Text size="sm" c="dimmed" ta="center">Saved on: {new Date(designItem.created_at).toLocaleString()}</Text> */}
 
 
-                <Stage
-                    width={phoneCaseClip.width * 0.2}  // Adjust the width (e.g., 50% smaller)
-                    height={phoneCaseClip.height * 0.2} // Adjust the height
-                    ref={stageRef}
-                    scale={{ x: 0.2, y: 0.2 }}  // Apply the same scale factor to shrink the canvas
-                >
-                    <Layer>
-                        {rectangles.map((rect) => (
-                            <Rect
-                                key={rect.id}
-                                id={rect.id}
-                                x={rect.x}
-                                y={rect.y}
-                                width={rect.width}
-                                height={rect.height}
-                                fill={rect.fillColor}
-                                stroke={strokeColor}
-                                draggable={false}
-
-                            />
-                        ))}
-                        {circles.map((circle) => (
-                            <Circle
-                                key={circle.id}
-                                id={circle.id}
-                                x={circle.x}
-                                y={circle.y}
-                                radius={circle.radius}
-                                fill={circle.fillColor}
-                                stroke={strokeColor}
-                                draggable={false}
-
-                            />
-                        ))}
-                        {arrows.map((arrow) => (
-                            <Arrow
-                                key={arrow.id}
-                                id={arrow.id}
-                                points={arrow.points || []}
-                                fill={arrow.fillColor}
-                                stroke={arrow.fillColor}
-                                draggable={false}
-
-                            />
-                        ))}
-                        {scribbles.map((scribble) => (
-                            <Line
-                                key={scribble.id}
-                                id={scribble.id}
-                                points={scribble.points}
-                                stroke={scribble.fillColor}
-                                strokeWidth={4}
-                                draggable={false}
-
-                            />
-                        ))}
-                        {images.map((image) => (
-                            image.image ? (  // Ensure the image object is defined
-                                <KonvaImage
-                                    key={image.id}
-                                    id={image.id}
-                                    image={image.image}  // This should be an HTMLImageElement
-                                    x={image.x}
-                                    y={image.y}
-                                    width={image.width}
-                                    height={image.height}
-                                    draggable={false}
-
-                                />
-                            ) : null  // Don't render if the image is not loaded
-                        ))}
-
-                    </Layer>
-                    <Layer>
-                        <KonvaImage
-                            id="bg"
-                            image={caseImage}
-                            width={phoneCaseClip.width}
-                            height={phoneCaseClip.height}
-                            listening={false}
-                        />
-                    </Layer>
-                </Stage>
-            </div>
-        </div>
+                    {/* Render the DesignDisplay component for the individual design */}
+                    <DesignDisplay
+                        designDataJson={designItem.design_data} // Pass the JSON string
+                        phoneModel={designItem.phone_model}
+                        caseMaterial={designItem.case_material}
+                        caseStyle={designItem.case_style}
+                    />
+                     {/* Optional: Add buttons like 'Edit' or 'Add to Cart' for each design */}
+                </Box>
+            ))}
+        </Box>
     );
 }
