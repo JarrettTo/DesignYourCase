@@ -23,7 +23,7 @@ interface LoadedImage {
     y: number;
     width: number;
     height: number;
-    base64: string; // Base64 data for the image
+    imageUrl: string; // Base64 data for the image
     rotation?: number; // Include rotation if you saved it
 }
 

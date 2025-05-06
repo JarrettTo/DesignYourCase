@@ -1,14 +1,15 @@
-'use client';
+'use client'; // Ensure this is at the very top
 
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import { Stage, Layer, Rect, Line, Text, Image as KonvaImage } from 'react-konva';
-import useImage from 'use-image';
+import useImage from 'use-image'; // Needed for the case background image
 import Konva from 'konva'; // Import Konva for types
-import { Box, Button } from '@mantine/core';
+import { Box, Button as MantineButton, Text as MantineText, Title, Loader } from '@mantine/core'; // Use Mantine components
 
 // --- Interfaces for Loaded Design Data ---
 // These should match the structure saved in design_data JSON
+
 interface LoadedScribble {
     id: string;
     x: number;
@@ -23,7 +24,7 @@ interface LoadedImage {
     y: number;
     width: number;
     height: number;
-    base64: string; // Base64 data for the image
+    imageUrl: string; // Base64 data for the image
     rotation?: number; // Include rotation if you saved it
 }
 
@@ -38,51 +39,47 @@ interface LoadedTextElement {
     rotation?: number; // Include rotation if you saved it
 }
 
-interface LoadedDesignData {
+// Interface for the structure *inside* the design_data JSON string
+interface ParsedDesignData {
     scribbles: LoadedScribble[];
-    images: LoadedImage[];
+    images: LoadedImage[]; // Array of image data with imageUrl
     textElements: LoadedTextElement[];
 }
 
 // --- Props for the Display Component ---
 interface DesignDisplayProps {
-    designDataJson: LoadedDesignData; // The JSON string from your DB
+    designDataJson: ParsedDesignData; // <--- Expect the JSON string here
     phoneModel: string; // The saved phone_model
     caseMaterial: string; // The saved case_type (material ID)
     caseStyle: string; // The saved color (style ID)
+    // image_url?: string; // The preview image URL might be passed for a quick preview, but not used for rendering elements
 }
 
-// <--- MAPPINGS (Copy from your Editor page) --->
+// <--- MAPPINGS (Copy from your Editor page and other necessary parts) --->
 // Map phone model name to its corresponding SVG path
 const phoneModelSvgMapping: { [key: string]: string | undefined } = {
-  // ... (Your phone model SVG paths here) ...
-    'iPhone 12': '/assets/frames/iphone-12/Iphone 12.svg', // Example path
+  // ... (Your phone model SVG paths here, make sure this list is comprehensive) ...
+    'iPhone 12': '/assets/frames/iphone-12/Iphone 12.svg',
     'iPhone 12 Pro': '/assets/frames/iphone-12/Iphone 12 pro.svg',
     'iPhone 12 Pro Max': '/assets/frames/iphone-12/Iphone 12 pro max.svg',
-    'iPhone 13': '/assets/frames/iphone-13/iPhone 13.svg', // Example path
+    'iPhone 13': '/assets/frames/iphone-13/iPhone 13.svg',
     'iPhone 13 Pro': '/assets/frames/iphone-13/iPhone 13 pro.svg',
     'iPhone 13 Pro Max': '/assets/frames/iphone-13/iPhone 13 pro max.svg',
-    'iPhone 14': '/assets/frames/iphone-14/iPhone 14.svg', // Example path
+    'iPhone 14': '/assets/frames/iphone-14/iPhone 14.svg',
     'iPhone 14 Pro': '/assets/frames/iphone-14/iPhone 14 pro.svg',
     'iPhone 14 Pro Max': '/assets/frames/iphone-14/iPhone 14 pro max.svg',
-    // Add all other models
+    // Include all other models...
 };
 
 // Map style ID to color hex code for the case background
 const caseStyleColorMapping: { [key: string]: string | undefined } = {
-    'red': '#FF0000',
-    'green': '#00FF00',
-    'blue': '#0000FF',
-    'black': '#000000',
-    // Add all other style ID to color mappings
+    'red': '#FF0000', 'green': '#00FF00', 'blue': '#0000FF', 'black': '#000000',
+    // Include all other style IDs...
 };
 
 // Determine if a material should have a colored background
 const materialsWithColoredBackground: string[] = [
-    'silicone',
-    'holo',
-    'full-wrap',
-    'mirror',
+    'silicone', 'holo', 'full-wrap', 'mirror',
 ];
 // <--- END MAPPINGS --->
 
@@ -98,10 +95,15 @@ const phoneCaseClip = {
 
 function DesignDisplay({ designDataJson, phoneModel, caseMaterial, caseStyle }: DesignDisplayProps) {
 
-    // State to hold the parsed design data and loaded images
-    const [designData, setDesignData] = useState<LoadedDesignData | null>(null);
-    const [loadedImages, setLoadedImages] = useState<{ id: string, img: HTMLImageElement, x: number, y: number, width: number, height: number, rotation?: number }[]>([]);
-    const [isLoading, setIsLoading] = useState(true); // Loading state for parsing/images
+    // State to hold the parsed design data object
+    const [parsedDesignData, setParsedDesignData] = useState<ParsedDesignData | null>(null);
+    // State to hold the *loaded* Konva Image elements (HTMLImageElement) mapped by ID
+    const [konvaImages, setKonvaImages] = useState<Map<string, HTMLImageElement>>(new Map());
+
+    // States for loading and error feedback specific to this component's rendering
+    const [isLoadingDesign, setIsLoadingDesign] = useState(true);
+    const [errorLoadingDesign, setErrorLoadingDesign] = useState<string | null>(null);
+
 
     // Determine background elements based on props
     const phoneSvgPath = phoneModel ? phoneModelSvgMapping[phoneModel] : undefined;
@@ -109,85 +111,136 @@ function DesignDisplay({ designDataJson, phoneModel, caseMaterial, caseStyle }: 
     const showColoredBackground = caseMaterial ? materialsWithColoredBackground.includes(caseMaterial) : false;
 
     // Load the phone case background image
-    const [caseImage] = useImage(phoneSvgPath || '');
+    const [caseImage, caseImageStatus] = useImage(phoneSvgPath || '');
 
 
-    // Effect to parse the JSON and load images when props change
+    // Effect to parse JSON and load images when the JSON string prop changes
     useEffect(() => {
+        // Declare loadPromises here so it's accessible in the cleanup function
+        let loadPromises: Promise<{ id: string, img: HTMLImageElement }>[] | undefined;
+
+
         if (!designDataJson) {
-            setDesignData(null);
-            setLoadedImages([]);
-            setIsLoading(false);
+            setParsedDesignData(null);
+            setKonvaImages(new Map()); // Clear loaded images
+            setIsLoadingDesign(false);
+            setErrorLoadingDesign('No design data provided.');
             return;
         }
 
-        setIsLoading(true);
-        try {
-            const parsedData = designDataJson;
-            setDesignData(parsedData);
+        setIsLoadingDesign(true);
+        setErrorLoadingDesign(null); // Clear previous errors
+        setKonvaImages(new Map()); // Clear previous loaded images before parsing/loading new ones
 
-            // --- Load images asynchronously ---
-            const imagePromises = parsedData.images.map(imgData => {
-                return new Promise<{ id: string, img: HTMLImageElement, x: number, y: number, width: number, height: number, rotation?: number }>((resolve, reject) => {
+        try {
+            // --- 1. Parse the JSON string ---
+            const parsedData: ParsedDesignData = designDataJson;
+            setParsedDesignData(parsedData);
+
+            // --- 2. Load images asynchronously from URLs ---
+            if (parsedData.images.length === 0) {
+                 // No images to load, finish loading process
+                 setIsLoadingDesign(false);
+                 loadPromises = []; // Ensure loadPromises is defined even if empty
+                 return;
+            }
+
+            // Assign the array of promises to the variable declared outside the try block
+            loadPromises = parsedData.images.map(imgData => {
+                return new Promise<{ id: string, img: HTMLImageElement }>((resolve, reject) => {
+                    if (!imgData.imageUrl) {
+                        console.warn(`Design data contains image ID ${imgData.id} with missing imageUrl.`);
+                        reject(new Error(`Missing URL for image ID ${imgData.id}`)); // Treat as error
+                        return;
+                    }
+
                     const img = new Image();
-                    img.onload = () => resolve({
-                        id: imgData.id,
-                        img: img,
-                        x: imgData.x,
-                        y: imgData.y,
-                        width: imgData.width,
-                        height: imgData.height,
-                        rotation: imgData.rotation // Include rotation
-                    });
-                    img.onerror = reject; // Handle load errors
-                    img.src = imgData.base64; // Load from Base64 string
+                    img.crossOrigin = 'Anonymous'; // Important for loading cross-origin images
+                    img.onload = () => resolve({ id: imgData.id, img: img });
+                    img.onerror = (err) => {
+                        console.error(`Error loading image URL for display: ${imgData.imageUrl}`, err);
+                        reject(new Error(`Failed to load image for display: ${imgData.imageUrl}`));
+                    };
+                    img.src = imgData.imageUrl; // <--- Load from the imageUrl
                 });
             });
 
-            // Wait for all images to load
-            Promise.all(imagePromises)
-                .then(images => {
-                    setLoadedImages(images);
-                    setIsLoading(false); // Done loading everything
+            Promise.all(loadPromises)
+                .then(loadedResults => {
+                    // Create a map of loaded HTMLImageElements keyed by their ID
+                    const loadedImagesMap = new Map<string, HTMLImageElement>();
+                    loadedResults.forEach(result => {
+                         // Add loaded images to the map
+                        loadedImagesMap.set(result.id, result.img);
+                    });
+                    setKonvaImages(loadedImagesMap); // Store the map
+                    setIsLoadingDesign(false); // Done loading everything
                 })
                 .catch(error => {
-                    console.error("Error loading images:", error);
-                    // Decide how to handle image loading errors - maybe show a partial design?
-                    setLoadedImages([]); // Clear images on error
-                    setIsLoading(false); // Still done loading the rest
-                    // Consider setting an error state to display
+                    // If any image failed to load
+                    console.error("Error loading one or more design images for display:", error);
+                    setKonvaImages(new Map()); // Clear loaded images on error
+                    setIsLoadingDesign(false); // Stop loading
+                    setErrorLoadingDesign(error.message || 'Failed to load one or more images for display.'); // Set error message
                 });
 
-        } catch (error) {
-            console.error("Error parsing design data JSON:", error);
-            setDesignData(null);
-            setLoadedImages([]);
-            setIsLoading(false);
-            // Consider setting an error state to display
+        } catch (error: any) {
+            // Catch error during JSON parsing
+            console.error("Error parsing design data JSON for display:", error);
+            setParsedDesignData(null);
+            setKonvaImages(new Map()); // Clear loaded images
+            setIsLoadingDesign(false);
+            setErrorLoadingDesign(error.message || 'Error parsing design data for display.');
+             // Ensure loadPromises is defined even if parsing fails
+            loadPromises = []; // Or undefined, handled by the cleanup check
         }
 
-    }, [designDataJson]); // Re-run effect if designDataJson prop changes
+         // Cleanup function: Cancel pending loads
+        return () => {
+            // Check if loadPromises was initialized before trying to iterate
+             loadPromises?.forEach((p: Promise<{ id: string, img: HTMLImageElement }>) => { // <-- Added explicit type for p
+                 p.then(result => { // <-- Added explicit type for result
+                     if (result.img) {
+                          // Remove handlers to avoid calling state setters on unmounted component
+                          result.img.onload = null;
+                          result.img.onerror = null;
+                          // Optionally try to stop the network request (basic attempt)
+                          result.img.src = '';
+                     }
+                 }).catch(() => {}); // Catch potential rejection during cleanup
+             });
+         };
 
 
-    // Render a loading state or error message if data isn't ready or invalid
-    if (isLoading) {
-        return <Box p="xl" ta="center">Loading Design...</Box>;
-    }
+    }, [designDataJson]); // Re-run effect if designDataJsonString prop changes
 
-    if (!designData) {
+
+    // --- Render Logic ---
+
+    // Handle loading states for the entire display component
+    if (caseImageStatus === 'loading' || isLoadingDesign) { // Combine loading states
          return (
-           <Box p="xl" ta="center">
-               <p>Error Loading Design</p>
-               <p>Could not display the design. The data might be missing or corrupted.</p>
-                {/* Optional: Add a link/button to go back */}
-                <Button component="a" href="/" mt="lg">Go Home</Button>
+              <Box p="xl" ta="center">
+                 <Loader size="lg" />
+                 <MantineText mt="md">{caseImageStatus === 'loading' ? 'Loading Phone Case...' : 'Loading Design Elements...'}</MantineText>
+             </Box>
+         );
+     }
+
+    if (errorLoadingDesign || !parsedDesignData) { // Display specific error for parsing or individual design images
+        return (
+            <Box p="xl" ta="center">
+               <Title order={2}>Error Loading Design</Title>
+               <MantineText mt="sm">{errorLoadingDesign || 'Could not parse or load design data.'}</MantineText>
+                {/* No button to go back here, as this component is likely nested in a page */}
            </Box>
-       );
+        );
     }
 
-    // Render the Konva stage and layers with the loaded design elements
+
+    // If everything is loaded successfully, render the Konva stage
     return (
-        <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', padding: '20px' }}>
+        <Box style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', padding: '20px' }}>
             <Stage
                 width={phoneCaseClip.width}
                 height={phoneCaseClip.height}
@@ -207,58 +260,56 @@ function DesignDisplay({ designDataJson, phoneModel, caseMaterial, caseStyle }: 
                       />
                     )}
                     {/* Phone Case Frame (SVG Image Overlay) */}
-                    {caseImage && ( // Render only when image is loaded
+                    {/* caseImage is already checked for loading status above */}
+                    {caseImage && (
                        <KonvaImage
                           image={caseImage}
                           width={phoneCaseClip.width}
                           height={phoneCaseClip.height}
                        />
                     )}
-                     {/* Optional: Placeholder if case image is not loaded */}
-                    {!caseImage && (
-                        <Rect
-                            x={0} y={0} width={phoneCaseClip.width} height={phoneCaseClip.height} fill="#e0e0e0"
-                         />
-                    )}
                 </Layer>
 
                 {/* Design Elements Layer */}
                 <Layer>
                     {/* Render Scribbles */}
-                    {designData.scribbles.map((scribble) => (
+                    {parsedDesignData.scribbles.map((scribble) => (
                         <Line
                             key={scribble.id}
                             points={scribble.points}
                             stroke={scribble.fillColor}
-                            strokeWidth={4} // Match editor stroke width
-                            tension={0.5} // Match editor tension
-                            lineCap="round" // Match editor line cap
-                            lineJoin="round" // Match editor line join
+                            strokeWidth={4}
+                            tension={0.5}
+                            lineCap="round"
+                            lineJoin="round"
                              // Position is implicitly in points, x/y can be 0
                             x={0}
                             y={0}
                         />
                     ))}
 
-                    {/* Render Loaded Images */}
-                    {loadedImages.map((image) => (
-                         // Use the loaded HTMLImageElement instance
-                        <KonvaImage
-                            key={image.id}
-                            image={image.img}
-                            x={image.x}
-                            y={image.y}
-                            width={image.width}
-                            height={image.height}
-                            rotation={image.rotation} // Apply rotation
-                             // Konva positions based on top-left, so no need for offset here
-                             // Unless you specifically saved data relative to center in the editor
-                             // (Based on editor code, it seems x/y are top-left)
-                        />
-                    ))}
+                    {/* Render Images from the loaded Konva Images map */}
+                    {/* We map over the data from the JSON to get the properties */}
+                    {parsedDesignData.images.map((imgData) => {
+                        // Get the loaded HTMLImageElement from the map
+                        const img = konvaImages.get(imgData.id);
+
+                        // Only render the KonvaImage if the HTMLImageElement is loaded and available
+                        return img ? (
+                            <KonvaImage
+                                key={imgData.id}
+                                image={img} // Use the loaded HTMLImageElement
+                                x={imgData.x}
+                                y={imgData.y}
+                                width={imgData.width}
+                                height={imgData.height}
+                                rotation={imgData.rotation} // Apply rotation
+                            />
+                        ) : null; // Return null if the image is not yet loaded in the map
+                    })}
 
                     {/* Render Text Elements */}
-                    {designData.textElements.map((text) => (
+                    {parsedDesignData.textElements.map((text) => (
                         <Text
                             key={text.id}
                             text={text.text}

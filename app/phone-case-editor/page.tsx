@@ -3,6 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import PhoneCaseEditor from '@/components/case-editor';
+import { MantineProvider } from '@mantine/core';
 
 
 
@@ -18,18 +19,20 @@ function EditorPage() {
   const modelIndex = searchParams.get('modelIndex') || '0';
 
   return (
-    <main className="flex flex-col w-full min-h-screen">
-      <Suspense fallback={<div>Loading...</div>}>
-        <PhoneCaseEditor
-          type={type as 'Transparent' | 'Colored'}
-          color={color}
-          phoneModel={phoneModel}
-          modelIndex={modelIndex}
-          caseType={''}
-          caseSecondType={''}
-        />
-      </Suspense>
-    </main>
+    <MantineProvider>
+      <main className="flex flex-col w-full min-h-screen">
+        <Suspense fallback={<div>Loading...</div>}>
+          <PhoneCaseEditor
+            type={type as 'Transparent' | 'Colored'}
+            color={color}
+            phoneModel={phoneModel}
+            modelIndex={modelIndex}
+            caseType={''}
+            caseSecondType={''}
+          />
+        </Suspense>
+      </main>
+    </MantineProvider>
   );
 }
 
