@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate-types": "supabase gen types typescript --project-id oaketamedylogwrmddnp --schema public > lib/database/types.ts"
+
   },
   "dependencies": {
     "@iamtraction/google-translate": "^2.0.1",
