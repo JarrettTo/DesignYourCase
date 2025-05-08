@@ -29,6 +29,7 @@ import useImage from 'use-image';
 import Konva from 'konva';
 import { Node, NodeConfig } from 'konva/lib/Node';
 import { createClient } from '@supabase/supabase-js';
+import { CaseType } from '@/lib/database/styles';
 
 // Create Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -55,14 +56,19 @@ type SelectedShape = {
 } | null;
 
 // Add props type for PhoneCaseEditor
-type PhoneCaseEditorProps = {
+interface PhoneCaseEditorProps {
+    id: number;
     phoneModel: string;
-    caseType: string;
-    caseSecondType: string;
-    type: 'Transparent' | 'Colored';
+    phoneBrand: string;
+    thumbnail: string;
     color: string;
-    modelIndex: string;
-};
+    material: string;
+    seller: string;
+    type: string;
+    variation: string;
+    price: number | null;
+    mockup: string | null;
+}
 
 type TextElement = {
   id: string;
@@ -97,12 +103,34 @@ const iPhoneModelsImages = [
   "iphone-14/iPhone 14 pro max.svg",
 ]
 
-function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondType, type, color, modelIndex }: PhoneCaseEditorProps) {  
+// Add these font options after the imports
+const FONT_OPTIONS = [
+  { name: 'Arial', value: 'Arial' },
+  { name: 'Times New Roman', value: 'Times New Roman' },
+  { name: 'Helvetica', value: 'Helvetica' },
+  { name: 'Georgia', value: 'Georgia' },
+  { name: 'Verdana', value: 'Verdana' },
+  { name: 'Courier New', value: 'Courier New' },
+];
+
+function PhoneCaseEditor({
+    id,
+    phoneModel: initialPhoneModel,
+    phoneBrand,
+    thumbnail,
+    color,
+    material,
+    seller,
+    type,
+    variation,
+    price,
+    mockup
+}: PhoneCaseEditorProps) {  
   const { data: session } = useSession();  
   const router = useRouter();
   const [phoneModel, setPhoneModel] = useState(initialPhoneModel);
   const searchParams = useSearchParams();
-  const index = parseInt(modelIndex, 10);
+  const index = parseInt(variation, 10);
   const [isLoading, setIsLoading] = useState(false);
     
   const stageRef = useRef<Konva.Stage>(null);
@@ -116,6 +144,14 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
   const [selectedShape, setSelectedShape] = useState<SelectedShape>(null);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [textElements, setTextElements] = useState<TextElement[]>([]);
+  const [selectedFont, setSelectedFont] = useState('Arial');
+  const [fontSize, setFontSize] = useState(24);
+  const [showTextControls, setShowTextControls] = useState(false);
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const lastCenter = useRef<{ x: number; y: number } | null>(null);
+  const lastDist = useRef<number | null>(null);
 
   const addTextElement = () => {
       const textId = `text-${uuidv4()}`;
@@ -124,11 +160,12 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
           x: 50,
           y: 50,
           text: 'Sample Text',
-          fontSize: 24,
-          fontFamily: 'Arial',
-          fill: '#000000',
+          fontSize: fontSize,
+          fontFamily: selectedFont,
+          fill: fillColor,
       };
       setTextElements([...textElements, newTextElement]);
+      setShowTextControls(true);
       
       // Select the new text element after it's added
       setTimeout(() => {
@@ -144,7 +181,8 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
   };
 
   // Use the phoneModel prop to determine which image to load
-  const [caseImage] = useImage(`/assets/frames/${iPhoneModelsImages[index]}`);    
+  const [caseImage] = useImage(`/assets/frames/${iPhoneModelsImages[index]}`, 'anonymous');    
+  const [mockupImage] = useImage(mockup || '', 'anonymous');
   const strokeColor = "#000";
   const isPainting = useRef(false);
   const currentShapeId = useRef<string | undefined>();
@@ -167,6 +205,7 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
     if (!node || node.id() === 'bg' || node === transformerRef.current) {
       setSelectedShape(null);
       setSelectedImageId(null);
+      setShowTextControls(false);
       return;
     }
     
@@ -178,8 +217,20 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
     
     if (node.getClassName() === 'Image') {
       setSelectedImageId(node.id());
+      setShowTextControls(false);
+    } else if (node.getClassName() === 'Text') {
+      setSelectedImageId(null);
+      setShowTextControls(true);
+      // Update font controls to match selected text
+      const textElement = textElements.find(text => text.id === node.id());
+      if (textElement) {
+        setSelectedFont(textElement.fontFamily);
+        setFontSize(textElement.fontSize);
+        setFillColor(textElement.fill);
+      }
     } else {
       setSelectedImageId(null);
+      setShowTextControls(false);
     }
     
     // Attach transformer to the node
@@ -254,67 +305,106 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
 
   async function handleExport() {
     const stage = stageRef.current;
-    if (!stage) return console.log("Stage not defined");
+    if (!stage) {
+      console.error("Stage not defined");
+      return;
+    }
+
+    console.log("Starting export process...");
+    console.log("Stage dimensions:", {
+      width: stage.width(),
+      height: stage.height(),
+      scale: stage.scaleX()
+    });
 
     // Create a zip file
     const zip = new JSZip();
+    console.log("Created zip file");
 
-    // Export the full stage as an image
-    const fullStageUri = stage.toDataURL();
-    const fullStageBase64 = fullStageUri.split(',')[1];
-    zip.file("full_design.png", fullStageBase64, {base64: true});
+    try {
+      // Hide UI elements before export
+      if (transformerRef.current) {
+        transformerRef.current.visible(false);
+      }
+      // Hide text controls
+      setShowTextControls(false);
+      // Force a redraw
+      stage.batchDraw();
 
-    // Function to export a single node as PNG
-    const exportNodeAsPNG = (node: Node<NodeConfig>) => {
-      return new Promise((resolve) => {
-        const tempStage = new Konva.Stage({
-          width: node.width(),
-          height: node.height(),
-          container: document.createElement('div')
-        });
-        const layer = new Konva.Layer();
-        const clone = node.clone();
-        layer.add(clone);
-        tempStage.add(layer);
-        
-        // Ensure the node is centered in the temporary stage
-        clone.position({
-          x: tempStage.width() / 2,
-          y: tempStage.height() / 2
-        });
-        clone.offset({
-          x: clone.width() / 2,
-          y: clone.height() / 2
-        });
-        
-        layer.batchDraw();
-        
-        setTimeout(() => {
-          const dataURL = tempStage.toDataURL();
-          resolve(dataURL.split(',')[1]);
-          tempStage.destroy();
-        }, 50);
+      // Export the full stage as a JPG
+      console.log("Attempting to export stage as JPG...");
+      const fullStageUri = stage.toDataURL({
+        mimeType: 'image/jpeg',
+        quality: 0.9,
+        pixelRatio: 2
       });
-    };
+      console.log("Stage exported to data URL:", fullStageUri.substring(0, 50) + "...");
+      
+      const fullStageBase64 = fullStageUri.split(',')[1];
+      console.log("Base64 data length:", fullStageBase64.length);
+      
+      zip.file("case_design.jpg", fullStageBase64, {base64: true});
+      console.log("Added case_design.jpg to zip");
 
-    // Helper function to export shapes
-    const exportShapes = async (shapes: string | any[], shapeType: string) => {
-      for (let i = 0; i < shapes.length; i++) {
-        const shape = stage.findOne(`#${shapes[i].id}`);
-        if (shape) {
-          const pngData = await exportNodeAsPNG(shape);
-          zip.file(`${shapeType}_${i}.png`, pngData as string, {base64: true});
+      // Export individual images if they exist
+      if (images.length > 0) {
+        console.log("Found", images.length, "images to export");
+        const imagesFolder = zip.folder("images");
+        if (imagesFolder) {
+          for (let i = 0; i < images.length; i++) {
+            const image = stage.findOne(`#${images[i].id}`);
+            if (image) {
+              console.log(`Exporting image ${i + 1}...`);
+              const imageUri = image.toDataURL({
+                mimeType: 'image/png',
+                quality: 1,
+                pixelRatio: 2
+              });
+              const imageBase64 = imageUri.split(',')[1];
+              imagesFolder.file(`image_${i + 1}.png`, imageBase64, {base64: true});
+              console.log(`Added image_${i + 1}.png to zip`);
+            }
+          }
         }
       }
-    };
-    await exportShapes(scribbles, 'scribble');
-    await exportShapes(images, 'image');
 
-    // Generate the zip file
-    const content = await zip.generateAsync({type: "blob"});
+      // Generate the zip file
+      console.log("Generating zip file...");
+      const content = await zip.generateAsync({
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: {
+          level: 9
+        }
+      });
+      console.log("Zip file generated, size:", content.size, "bytes");
 
-    // Save the zip file
-    saveAs(content, "design_export.zip");
+      // Save the zip file
+      console.log("Saving zip file...");
+      saveAs(content, "case_design.zip");
+      console.log("Export completed successfully");
+
+      // Restore UI elements
+      if (transformerRef.current) {
+        transformerRef.current.visible(true);
+      }
+      // Restore text controls if a text element was selected
+      if (selectedShape && selectedShape.type === 'Text') {
+        setShowTextControls(true);
+      }
+      // Force a redraw
+      stage.batchDraw();
+    } catch (error) {
+      console.error("Error during export:", error);
+      // Make sure to restore UI elements even if there's an error
+      if (transformerRef.current) {
+        transformerRef.current.visible(true);
+      }
+      if (selectedShape && selectedShape.type === 'Text') {
+        setShowTextControls(true);
+      }
+      stage.batchDraw();
+    }
   }
 
   function onClick(e: { target: any; evt: any; }) {
@@ -427,14 +517,15 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
     
     reader.onload = (event) => {
       const img = new Image();
+      img.crossOrigin = 'anonymous';
       if (event.target) {
         img.src = event.target.result as string;
       }
   
       img.onload = () => {
         const id = uuidv4();
-        const maxWidth = phoneCaseClip.width * 0.8; // 80% of canvas width
-        const maxHeight = phoneCaseClip.height * 0.8; // 80% of canvas height
+        const maxWidth = phoneCaseClip.width * 0.8;
+        const maxHeight = phoneCaseClip.height * 0.8;
         
         const scaledDimensions = scaleImage(img, maxWidth, maxHeight);
         
@@ -442,8 +533,8 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
           ...prevImages,
           {
             id,
-            x: (phoneCaseClip.width - scaledDimensions.width) / 2, // Center horizontally
-            y: (phoneCaseClip.height - scaledDimensions.height) / 2, // Center vertically
+            x: (phoneCaseClip.width - scaledDimensions.width) / 2,
+            y: (phoneCaseClip.height - scaledDimensions.height) / 2,
             width: scaledDimensions.width,
             height: scaledDimensions.height,
             image: img,
@@ -451,7 +542,6 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
           },
         ]);
         
-        // Select the new image after it's added
         setTimeout(() => {
           const imageNode = stageRef.current?.findOne(`#${id}`);
           if (imageNode && transformerRef.current) {
@@ -520,47 +610,65 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
         throw new Error("Failed to get design data");
       }
   
-      // Get the current user (or guest ID if not logged in)
-      const userId = session?.user?.email
-      console.log("Current User: ", userId);
-  
-      // 1. Upload the image to Supabase Storage
-      const imageFile = await fetch(designData.designImage).then((res) => res.blob());
-      const imageFileName = `design-images/${userId}/${uuidv4()}.png`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('phone-case-designs')
-        .upload(imageFileName, imageFile);
-  
-      if (uploadError) {
-        throw new Error("Failed to upload design image: " + uploadError.message);
+      // Get the current user's email
+      const userEmail = session?.user?.email;
+      if (!userEmail) {
+        throw new Error("User must be logged in to save designs");
       }
-  
-      // Get the public URL for the uploaded image
-      const { data: { publicUrl } } = supabase.storage
-        .from('phone-case-designs')
-        .getPublicUrl(imageFileName);
-  
-      // 2. Save the design data to the database
-      const savedDesign: SavedDesign = {
-        user_id: userId || undefined,
-        design_data: designData.designJSON,
-        image_url: publicUrl,
-        phone_model: phoneModel,
-        case_type: `${caseType} ${caseSecondType}`,
-        color: color
-      };
-  
-      const { data, error } = await supabase
+
+      // 1. Create the design record first to get the ID
+      const { data: designRecord, error: designError } = await supabase
         .from('designs')
-        .insert(savedDesign)
-        .select();
-  
-      if (error) {
-        throw new Error("Failed to save design: " + error.message);
+        .insert({
+          user_id: userEmail,
+          case_style_id: id,
+          design_data: designData.designJSON
+        })
+        .select()
+        .single();
+
+      if (designError || !designRecord) {
+        throw new Error("Failed to create design record: " + designError?.message);
       }
-  
-      // 3. Redirect to dashboard
+
+      const designId = designRecord.id;
+      console.log("Created design record with ID:", designId);
+
+      // 2. Upload the stage image
+      const stageImageFile = await fetch(designData.designImage).then((res) => res.blob());
+      const stageImagePath = `design-images/${userEmail}/${designId}/stage.png`;
+      
+      const { error: stageUploadError } = await supabase.storage
+        .from('phone-case-designs')
+        .upload(stageImagePath, stageImageFile);
+
+      if (stageUploadError) {
+        throw new Error("Failed to upload stage image: " + stageUploadError.message);
+      }
+
+      // 3. Upload individual images
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        if (image.image) {
+          // Convert image to blob
+          const response = await fetch(image.image.src);
+          const blob = await response.blob();
+          
+          const imagePath = `design-images/${userEmail}/${designId}/image_${i + 1}.png`;
+          
+          const { error: imageUploadError } = await supabase.storage
+            .from('phone-case-designs')
+            .upload(imagePath, blob);
+
+          if (imageUploadError) {
+            console.error(`Failed to upload image ${i + 1}:`, imageUploadError);
+            // Continue with other images even if one fails
+            continue;
+          }
+        }
+      }
+
+      // 4. Redirect to dashboard
       router.push('/dashboard');
     } catch (error) {
       console.error("Error adding to cart:", error);
@@ -600,18 +708,17 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
         .getPublicUrl(imageFileName);
 
       // 2. Save the design data to the database
-      const savedDesign: SavedDesign = {
-        user_id: userId,
-        design_data: designData.designJSON,
+      const caseData = {
+        user_id: user?.id,
         image_url: publicUrl,
         phone_model: phoneModel,
-        case_type: `${caseType} ${caseSecondType}`,
+        case_type: type,
         color: color
       };
 
       const { data, error } = await supabase
         .from('designs')
-        .insert(savedDesign)
+        .insert(caseData)
         .select();
 
       if (error) {
@@ -631,110 +738,166 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
       setIsLoading(false);
     }
   }
+
+  // Add this function to handle font changes
+  const handleFontChange = (font: string) => {
+    setSelectedFont(font);
+    if (selectedShape && selectedShape.type === 'Text') {
+        updateTextElement(selectedShape.id, { fontFamily: font });
+    }
+  };
+
+  // Add this function to handle font size changes
+  const handleFontSizeChange = (size: number) => {
+    setFontSize(size);
+    if (selectedShape && selectedShape.type === 'Text') {
+        updateTextElement(selectedShape.id, { fontSize: size });
+    }
+  };
+
+  const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
+    e.evt.preventDefault();
+
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const oldScale = scale;
+    const pointer = stage.getPointerPosition();
+    if (!pointer) return;
+
+    const mousePointTo = {
+      x: (pointer.x - position.x) / oldScale,
+      y: (pointer.y - position.y) / oldScale,
+    };
+
+    // Calculate new scale
+    const newScale = e.evt.deltaY < 0 ? oldScale * 1.1 : oldScale / 1.1;
+    
+    // Limit scale between 0.5 and 3
+    const limitedScale = Math.max(0.5, Math.min(3, newScale));
+
+    setScale(limitedScale);
+    setPosition({
+      x: pointer.x - mousePointTo.x * limitedScale,
+      y: pointer.y - mousePointTo.y * limitedScale,
+    });
+  };
+
+  const handleTouchStart = (e: Konva.KonvaEventObject<TouchEvent>) => {
+    e.evt.preventDefault();
+    const touch1 = e.evt.touches[0];
+    const touch2 = e.evt.touches[1];
+
+    if (touch1 && touch2) {
+      // Calculate center point between two touches
+      const center = {
+        x: (touch1.clientX + touch2.clientX) / 2,
+        y: (touch1.clientY + touch2.clientY) / 2,
+      };
+      lastCenter.current = center;
+
+      // Calculate distance between touches
+      const dist = Math.sqrt(
+        Math.pow(touch2.clientX - touch1.clientX, 2) +
+        Math.pow(touch2.clientY - touch1.clientY, 2)
+      );
+      lastDist.current = dist;
+    } else if (touch1) {
+      // Single touch - start dragging
+      setIsDragging(true);
+      const stage = stageRef.current;
+      if (!stage) return;
+      const pointer = stage.getPointerPosition();
+      if (!pointer) return;
+      setPosition({
+        x: pointer.x - position.x,
+        y: pointer.y - position.y,
+      });
+    }
+  };
+
+  const handleTouchMove = (e: Konva.KonvaEventObject<TouchEvent>) => {
+    e.evt.preventDefault();
+    const touch1 = e.evt.touches[0];
+    const touch2 = e.evt.touches[1];
+
+    if (touch1 && touch2 && lastCenter.current && lastDist.current) {
+      // Calculate new center point
+      const center = {
+        x: (touch1.clientX + touch2.clientX) / 2,
+        y: (touch1.clientY + touch2.clientY) / 2,
+      };
+
+      // Calculate new distance
+      const dist = Math.sqrt(
+        Math.pow(touch2.clientX - touch1.clientX, 2) +
+        Math.pow(touch2.clientY - touch1.clientY, 2)
+      );
+
+      // Calculate scale change
+      const scaleChange = dist / lastDist.current;
+      const newScale = Math.max(0.5, Math.min(3, scale * scaleChange));
+
+      // Calculate position change
+      const dx = center.x - lastCenter.current.x;
+      const dy = center.y - lastCenter.current.y;
+
+      setScale(newScale);
+      setPosition({
+        x: position.x + dx,
+        y: position.y + dy,
+      });
+
+      lastCenter.current = center;
+      lastDist.current = dist;
+    } else if (touch1 && isDragging) {
+      // Single touch - continue dragging
+      const stage = stageRef.current;
+      if (!stage) return;
+      const pointer = stage.getPointerPosition();
+      if (!pointer) return;
+      setPosition({
+        x: pointer.x - position.x,
+        y: pointer.y - position.y,
+      });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    lastCenter.current = null;
+    lastDist.current = null;
+  };
   
   return (
     <div>
       <div className="relative w-full h-screen overflow-hidden">
-        <div className="absolute top-0 z-10 w-full py-2 ">
-          <div className="flex justify-center items-center gap-3 py-2 px-3 w-fit mx-auto border shadow-lg rounded-lg">
-            <button
-              className={
-                action === ACTIONS.SELECT
-                  ? "bg-violet-300 p-1 rounded"
-                  : "p-1 hover:bg-violet-100 rounded"
-              }
-              onClick={() => setAction(ACTIONS.SELECT)}
-            >
-              <GiArrowCursor size={"2rem"} />
-            </button>
-            <button
-              className={
-                action === ACTIONS.SCRIBBLE
-                  ? "bg-violet-300 p-1 rounded"
-                  : "p-1 hover:bg-violet-100 rounded"
-              }
-              onClick={() => setAction(ACTIONS.SCRIBBLE)}
-            >
-              <LuPencil size={"2rem"} />
-            </button>
-            <button 
-              className="p-1 hover:bg-violet-100 rounded"
-              onClick={addTextElement}
-            >
-              <MdOutlineTextFields size={"2rem"}/>
-            </button>
-            <button>
-              <input
-                className="w-6 h-6"
-                type="color"
-                value={fillColor}
-                onChange={(e) => setFillColor(e.target.value)}
-              />
-            </button>
-            
-            <button>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{ display: 'none' }}
-                id="image-upload"
-              />
-              <label htmlFor="image-upload" className='hover:bg-violet-100 cursor-pointer'>
-                <FaImage size={"2rem"} />
-              </label>
-            </button>
-            <button
-              className="p-1 hover:bg-violet-100 rounded"
-              onClick={handleDelete}
-            >
-              <IoMdTrash size={"2rem"} />
-            </button>
-            <button
-              className="p-1 hover:bg-violet-100 rounded"
-              onClick={() => handleExport().catch(console.error)}
-            >
-              <IoMdDownload size={"2rem"} />
-            </button>
-            <div className='max-md:hidden flex'>
-              <button
-                className="p-1 hover:bg-violet-100 rounded flex items-center"
-                onClick={handleAddToCart}
-                disabled={isLoading}
-              >
-                <FaShoppingCart size={"1.5rem"} className="mr-2" />
-                {isLoading ? "Adding..." : "Add to Cart"}
-              </button>
-              <button
-                className="p-1 hover:bg-violet-100 rounded flex items-center ml-2"
-                onClick={handleCheckoutNow}
-                disabled={isLoading}
-              >
-                <MdShoppingCartCheckout size={"1.5rem"} className="mr-2" />
-                {isLoading ? "Processing..." : "Checkout Now"}
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className='max-md:flex hidden bottom-5 z-20 right-5 absolute gap-2'>
+        {/* Action Buttons */}
+        <div className="absolute top-4 right-4 z-10 flex gap-3">
           <button
-            className="p-1 hover:bg-violet-100 rounded flex items-center"
+            className="px-4 py-2 rounded-lg flex items-center text-sm font-medium transition-all hover:opacity-90"
+            style={{
+              background: 'linear-gradient(to right, #F4D7EA, #D9FBFE)'
+            }}
             onClick={handleAddToCart}
             disabled={isLoading}
           >
-            <FaShoppingCart size={"1.5rem"} className="mr-2" />
-            {isLoading ? "Adding..." : "Add to Cart"}
+            <FaShoppingCart size={"1.2rem"} />
           </button>
           <button
-            className="p-1 hover:bg-violet-100 rounded flex items-center"
+            className="px-4 py-2 rounded-lg flex items-center text-sm font-medium transition-all hover:opacity-90"
+            style={{
+              background: 'linear-gradient(to right, #F4D7EA, #D9FBFE)'
+            }}
             onClick={handleCheckoutNow}
             disabled={isLoading}
           >
-            <MdShoppingCartCheckout size={"1.5rem"} className="mr-2" />
-            {isLoading ? "Processing..." : "Checkout Now"}
+            <MdShoppingCartCheckout size={"1.2rem"} className="mr-2" />
+            {isLoading ? "Processing..." : "Checkout"}
           </button>
         </div>
-        <div className='flex justify-center items-center w-full h-full pt-20'>
+
+        <div className='flex justify-center items-center w-full h-full'>
           <Stage
             width={phoneCaseClip.width}
             height={phoneCaseClip.height}
@@ -743,9 +906,27 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onClick={onClick}
+            onWheel={handleWheel}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            draggable={action === ACTIONS.SELECT}
+            scaleX={scale}
+            scaleY={scale}
+            x={position.x}
+            y={position.y}
           >
             {/* Background Layer */}
             <Layer ref={backgroundLayerRef}>
+              {mockupImage && (
+                <KonvaImage
+                  id="mockup"
+                  image={mockupImage}
+                  width={phoneCaseClip.width}
+                  height={phoneCaseClip.height}
+                  listening={false}
+                />
+              )}
               {type === 'Colored' && (
                 <Rect
                   id="colored-background"
@@ -836,6 +1017,85 @@ function PhoneCaseEditor({ phoneModel: initialPhoneModel, caseType, caseSecondTy
               />
             </Layer>
           </Stage>
+        </div>
+
+        {/* Bottom Toolbar */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 pb-4">
+          <div className="flex flex-col gap-2">
+            {/* Text Controls */}
+            {showTextControls && (
+              <div className="flex justify-center items-center gap-3 py-2 px-3 w-[90%] sm:w-fit mx-auto border shadow-lg rounded-lg bg-white">
+                <select
+                  value={selectedFont}
+                  onChange={(e) => handleFontChange(e.target.value)}
+                  className="px-2 py-1 border rounded"
+                >
+                  {FONT_OPTIONS.map((font) => (
+                    <option key={font.value} value={font.value}>
+                      {font.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  value={fontSize}
+                  onChange={(e) => handleFontSizeChange(Number(e.target.value))}
+                  min="8"
+                  max="72"
+                  className="w-16 px-2 py-1 border rounded"
+                />
+                <input
+                  type="color"
+                  value={fillColor}
+                  onChange={(e) => {
+                    setFillColor(e.target.value);
+                    if (selectedShape && selectedShape.type === 'Text') {
+                      updateTextElement(selectedShape.id, { fill: e.target.value });
+                    }
+                  }}
+                  className="w-8 h-8"
+                />
+              </div>
+            )}
+            
+            {/* Main Toolbar */}
+            <div className="flex justify-center items-center gap-3 py-2 px-3 w-[90%] sm:w-fit mx-auto border shadow-lg rounded-lg"
+              style={{
+                background: 'linear-gradient(to right, #F4D7EA, #D9FBFE)'
+              }}
+            >
+              <button 
+                className="p-1 hover:bg-white/20 rounded"
+                onClick={addTextElement}
+              >
+                <MdOutlineTextFields size={"2rem"}/>
+              </button>
+              <button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{ display: 'none' }}
+                  id="image-upload"
+                />
+                <label htmlFor="image-upload" className='hover:bg-white/20 cursor-pointer'>
+                  <FaImage size={"2rem"} />
+                </label>
+              </button>
+              <button
+                className="p-1 hover:bg-white/20 rounded"
+                onClick={handleDelete}
+              >
+                <IoMdTrash size={"2rem"} />
+              </button>
+              <button
+                className="p-1 hover:bg-white/20 rounded"
+                onClick={() => handleExport().catch(console.error)}
+              >
+                <IoMdDownload size={"2rem"} />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

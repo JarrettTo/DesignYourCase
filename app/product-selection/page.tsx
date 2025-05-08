@@ -52,9 +52,17 @@ const theme = createTheme({
 })
 
 interface SelectedOptions {
-  type: CaseType;  
-  color: string;
+  id: number;
   phoneModel: string;
+  phoneBrand: string;
+  thumbnail: string;
+  color: string;
+  material: string;
+  seller: string;
+  type: string;
+  variation: string;
+  price: number | null;
+  mockup: string | null;
 }
 
 export default function ProductSelect() {
@@ -62,29 +70,40 @@ export default function ProductSelect() {
   const productId = searchParams.get('productId');
 
   const [selectedOptions, setSelectedOptions] = useState<SelectedOptions>({
-    type: 'Transparent',
+    id: 0,
+    phoneModel: '',
+    phoneBrand: '',
+    thumbnail: '',
     color: '',
-    phoneModel: ''
+    material: '',
+    seller: '',
+    type: 'Transparent',
+    variation: '',
+    price: null,
+    mockup: null
   });
 
   const handleProductSelection = (options: SelectedOptions) => {
-    const validType: CaseType = options.type === 'Colored' ? 'Colored' : 'Transparent';
-
-    setSelectedOptions({
-      ...options,
-      type: validType, 
-    });
+    console.log("Selected Options:", options);
+    setSelectedOptions(options);
   };
 
   return (
     <MantineProvider theme={theme}>
       <main className="flex flex-col w-full overflow-x-hidden">
-        {productId && selectedOptions.phoneModel ? (
+        {selectedOptions.phoneModel && selectedOptions.material && selectedOptions.color ? (
           <PhoneCaseEditor
-            type={selectedOptions.type}
+            id={selectedOptions.id}
+            phoneModel={selectedOptions.phoneModel}
+            phoneBrand={selectedOptions.phoneBrand}
+            thumbnail={selectedOptions.thumbnail}
             color={selectedOptions.color}
-            phoneModel={selectedOptions.phoneModel} caseType={''} caseSecondType={''}
-            modelIndex={'0'}
+            material={selectedOptions.material}
+            seller={selectedOptions.seller}
+            type={selectedOptions.type}
+            variation={selectedOptions.variation}
+            price={selectedOptions.price}
+            mockup={selectedOptions.mockup}
           />
         ) : (
           <ProductSelection onSubmit={handleProductSelection} />

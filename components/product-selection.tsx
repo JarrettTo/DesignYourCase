@@ -1,450 +1,485 @@
 'use client'
 
-import { Button, Radio, Combobox, InputBase, useCombobox, Input, ColorPicker, SimpleGrid, Image, Popover } from '@mantine/core';
+import React, { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { SimpleGrid, Image } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { getDesignsByBrand, CaseStyle } from '@/lib/database/styles';
 
 type CaseType = 'Transparent' | 'Colored';
 
-type Model = {
-    modelName: string;
-    variations: string[];
-}
-
-type Brand = {
-    name: string;
-    models: Model[];
-}
-
-type Product = {
-    productId: number;
-    product: string;
-    brands: Brand[];
-}
-
-// Add interface for selected options
-interface SelectedOptions {
-    phoneModel: string;
-    variation: string;
-    secondVar: string;
+type SelectedOptions = {
     type: CaseType;
     color: string;
+    phoneModel: string;
+    material: string;
 }
 
-// Add interface for component props
 interface ProductSelectionProps {
-    onSubmit?: (options: SelectedOptions) => void;
+    onSubmit: (options: {
+        id: number;
+        phoneModel: string;
+        phoneBrand: string;
+        thumbnail: string;
+        color: string;
+        material: string;
+        seller: string;
+        type: string;
+        variation: string;
+        price: number | null;
+        mockup: string | null;
+    }) => void;
 }
-
-const phoneBrands = [
-    "iPhone",
-    "Huawei",
-    "Vivo",
-    "OPPO",
-    "Xiaomi",
-    "OnePlus",
-    "Redmi",
-    "Honor",
-    "iQOO"
-]
-
-const variations = [
-    "Transparent",
-    "Cream",
-    "Laser Engraving",
-    "Silicone",
-    "Mirror",
-    "Tempered Glass",
-    "Lambskin",
-    "Wheat"
-]
-
-const varImages = [
-    "1.5 mm thickened transparent.png",
-    "cream case.jpg",
-    "imd laser.jpg",
-    "straight edge liquid silicone.png",
-    "mirror case.jpg",
-    "metallic paint tempered glass.png",
-    "soft lambskin.jpg",
-    "wheat case.png"
-]
-
-const brands = [
-    "iPhone",
-    "Huawei",
-    "IQOO",
-    "Vivo",
-    "Oppo",
-    "Xiaomi",
-    "Redmi",
-    "OnePlus",
-    "Honor",
-    "Meizu"
-]
-
-const brandImages = [
-    "iphone.png",
-    "huawei.png",
-    "iqoo.png",
-    "vivo.png",
-    "oppo.png",
-    "xiaomi.png",
-    "redmi.png",
-    "oneplus.png",
-    "honor.png",
-    "meizu.jpg"
-]
-
-const iPhoneModels = [
-    "iPhone12",
-    "iPhone12Pro",
-    "iPhone12ProMax",
-    "iPhone13",
-    "iPhone13Pro",
-    "iPhone13ProMax",
-    "iPhone14",
-    "iPhone14Pro",
-    "iPhone14ProMax",
-]
-
-const iPhoneModelsImages = [
-    "iphone-12/Iphone 12.svg",
-    "iphone-12/Iphone 12 pro.svg",
-    "iphone-12/Iphone 12 pro max.svg",
-    "iphone-13/iPhone 13.svg",
-    "iphone-13/iPhone 13 pro.svg",
-    "iphone-13/iPhone 13 pro max.svg",
-    "iphone-14/iPhone 14.svg",
-    "iphone-14/iPhone 14 pro.svg",
-    "iphone-14/iPhone 14 pro max.svg",
-]
-
 
 export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const productId = searchParams.get('productId');
 
-    const [products, setProducts] = useState<Product[]>([]);
-    const [currentProduct, setCurrentProduct] = useState<Product>();
-    const [selectedBrand, setSelectedBrand] = useState('');
+    const [brands, setBrands] = useState<{ displayName: string; originalName: string }[]>([]);
+    const [selectedBrand, setSelectedBrand] = useState<string>('');
+    const [availableModels, setAvailableModels] = useState<CaseStyle[]>([]);
+    const [selectedModel, setSelectedModel] = useState<string>('');
+    const [availableMaterials, setAvailableMaterials] = useState<{ material: string; thumbnail: string; minPrice: number | null; maxPrice: number | null }[]>([]);
+    const [selectedMaterial, setSelectedMaterial] = useState<string>('');
+    const [availableColors, setAvailableColors] = useState<{ color: string; thumbnail: string; price: number | null }[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [designs, setDesigns] = useState<CaseStyle[]>([]);
 
-    const [selectedItem, setSelectedItem] = useState<Model | null>(null);
-    const [selectedVar, setSelectedVar] = useState<string>('');
-    const [secondLength, setSecondLength] = useState<number>(0);
-    const [secondOptions, setSecondOptions] = useState<string[]>([]);
-    const [selectedSecond, setSelectedSecond] = useState("");
-    const [selectedModel, setSelectedModel] = useState("");
-    const [secondOptionImage, setSecondOptionImage] = useState<string[]>([]);
-    const [unavailable, setUnavailable] = useState<string[]>([]);
-
-    const [value, setValue] = useState<string | null>(null);
-
-    const [color, setColor] = useState('#ffa1efff');
-
-    const [openedWrap, setOpenedWrap] = useState(false);
-
-    const combobox = useCombobox({
-        onDropdownClose: () => combobox.resetSelectedOption(),
-    });
-
-    const handleSelect = (item: Model) => {
-        setSelectedItem(item);
+    const capitalizeFirstLetter = (str: string) => {
+        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
     };
 
-    const form = useForm({
-        initialValues: {
-            variation: "",
-            phoneModel: "",
-            secondVar: "",
-        },
-        validate: {
-            variation: (value) => value ? null : "Please select a variation",
-            phoneModel: (value) => value ? null : "Please select a phone model"
-        }
-    });
-    // Update form values when selections change
+    const formatPrice = (price: number | null) => {
+        if (price === null) return '';
+        return `$${price.toFixed(2)}`;
+    };
+
+    // Get all unique brands from case_styles
     useEffect(() => {
-        if (selectedVar) {
-            form.setFieldValue('variation', selectedVar);
-        }
-    }, [selectedVar]);
+        const getBrands = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const designs = await getDesignsByBrand('');
+                
+                if (designs) {
+                    // Extract unique brands and sort alphabetically
+                    const uniqueBrands = Array.from(new Set<string | null>(designs
+                        .map((design: CaseStyle) => design.phoneBrand)))
+                        .filter((brand): brand is string => brand !== null)
+                        .map(brand => ({
+                            displayName: capitalizeFirstLetter(brand),
+                            originalName: brand.toLowerCase()
+                        }))
+                        .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
+                    setBrands(uniqueBrands);
+                }
+            } catch (error) {
+                console.error('Error fetching brands:', error);
+                setError('Failed to load brands');
+            } finally {
+                setLoading(false);
+            }
+        };
+        getBrands();
+    }, []);
+
+    // When a brand is selected, get its available models
     useEffect(() => {
-        if (selectedBrand) {
-            form.setFieldValue('phoneModel', selectedBrand);
-        }
-    }, [selectedBrand]);
-
-    useEffect(() => {
-        if (selectedVar) {
-            form.setFieldValue('variation', selectedVar);
-        }
-    }, [selectedVar]);
-
-    useEffect(() => {
-        if (selectedSecond) {
-            form.setFieldValue('secondVar', selectedSecond);
-        }
-    }, [selectedSecond]);
-
-    useEffect(() => {
-        if (color) {
-            form.setFieldValue('color', color);
-        }
-    }, [color]);
-
-    const handleSubmit = (values: typeof form.values) => {
-
-        if (!values.variation || !selectedModel) {
-            console.error('Missing required fields');
+        const getModelsForBrand = async () => {
+            if (!selectedBrand) {
+                setAvailableModels([]);
             return;
         }
 
-        const selectedOptions: SelectedOptions = {
-            phoneModel: selectedModel,
-            variation: values.variation,
-            secondVar: values.secondVar,
-            type: values.variation as CaseType, // Assuming variation is the case type
-            color: color
+            try {
+                const designs = await getDesignsByBrand(selectedBrand);
+                if (designs) {
+                    // Get unique phone models and sort alphabetically
+                    const uniqueModels = Array.from(new Set<string | null>(designs
+                        .map((design: CaseStyle) => design.phoneModel)))
+                        .filter((model): model is string => model !== null)
+                        .map(model => capitalizeFirstLetter(model))
+                        .sort((a, b) => a.localeCompare(b));
+
+                    // Create CaseStyle objects for each unique model with their prices
+                    const modelStyles: CaseStyle[] = uniqueModels.map(model => {
+                        const modelDesign = designs.find((design: CaseStyle) => 
+                            design.phoneModel?.toLowerCase() === model.toLowerCase()
+                        );
+                        return {
+                            id: modelDesign?.id || 0,
+                            phoneModel: model,
+                            phoneBrand: selectedBrand,
+                            thumbnail: modelDesign?.thumbnail || '',
+                            color: null,
+                            material: null,
+                            seller: modelDesign?.seller || '',
+                            type: null,
+                            variation: null,
+                            price: modelDesign?.price || null,
+                            mockup: modelDesign?.mockup || null
+                        };
+                    });
+
+                    setAvailableModels(modelStyles);
+                }
+            } catch (error) {
+                console.error('Error fetching models:', error);
+                setError('Failed to load models');
+            }
         };
 
-        if (onSubmit) {
-            onSubmit(selectedOptions);
+        getModelsForBrand();
+    }, [selectedBrand]);
+
+    // When a model is selected, get its available materials
+    useEffect(() => {
+        const getMaterialsForModel = async () => {
+            if (!selectedModel || !selectedBrand) {
+                setAvailableMaterials([]);
+                return;
+            }
+
+            try {
+                const designs = await getDesignsByBrand(selectedBrand);
+                if (designs) {
+                    // Filter designs for selected model and get unique materials
+                    const modelDesigns = designs.filter((design: CaseStyle) => 
+                        design.phoneModel?.toLowerCase() === selectedModel.toLowerCase()
+                    );
+
+                    // Create a map to store unique materials with their thumbnails and price ranges
+                    const materialMap = new Map<string, { 
+                        thumbnail: string; 
+                        minPrice: number | null;
+                        maxPrice: number | null;
+                    }>();
+                    
+                    modelDesigns.forEach((design: CaseStyle) => {
+                        if (design.material) {
+                            const current = materialMap.get(design.material) || {
+                                thumbnail: design.thumbnail || '',
+                                minPrice: design.price,
+                                maxPrice: design.price
+                            };
+                            
+                            if (design.price !== null) {
+                                current.minPrice = current.minPrice === null ? design.price : Math.min(current.minPrice, design.price);
+                                current.maxPrice = current.maxPrice === null ? design.price : Math.max(current.maxPrice, design.price);
+                            }
+                            
+                            materialMap.set(design.material, current);
+                        }
+                    });
+
+                    // Convert map to array and sort alphabetically
+                    const materials = Array.from(materialMap.entries())
+                        .map(([material, data]) => ({
+                            material: capitalizeFirstLetter(material),
+                            thumbnail: data.thumbnail,
+                            minPrice: data.minPrice,
+                            maxPrice: data.maxPrice
+                        }))
+                        .sort((a, b) => a.material.localeCompare(b.material));
+
+                    setAvailableMaterials(materials);
+                }
+            } catch (error) {
+                console.error('Error fetching materials:', error);
+                setError('Failed to load materials');
+            }
+        };
+
+        getMaterialsForModel();
+    }, [selectedModel, selectedBrand]);
+
+    // When a material is selected, get its available colors
+    useEffect(() => {
+        const getColorsForMaterial = async () => {
+            if (!selectedModel || !selectedBrand || !selectedMaterial) {
+                setAvailableColors([]);
+                setDesigns([]);
+                return;
+            }
+
+            try {
+                const allDesigns = await getDesignsByBrand(selectedBrand);
+                if (allDesigns) {
+                    // Filter designs for selected model and material
+                    const materialDesigns = allDesigns.filter((design: CaseStyle) => 
+                        design.phoneModel?.toLowerCase() === selectedModel.toLowerCase() &&
+                        design.material?.toLowerCase() === selectedMaterial.toLowerCase()
+                    );
+
+                    // Store the filtered designs
+                    setDesigns(materialDesigns);
+
+                    // Create a map to store unique colors with their thumbnails and prices
+                    const colorMap = new Map<string, { thumbnail: string; price: number | null }>();
+                    materialDesigns.forEach((design: CaseStyle) => {
+                        if (design.color && !colorMap.has(design.color)) {
+                            colorMap.set(design.color, {
+                                thumbnail: design.thumbnail || '',
+                                price: design.price
+                            });
+                        }
+                    });
+
+                    // Convert map to array and sort alphabetically
+                    const colors = Array.from(colorMap.entries())
+                        .map(([color, data]) => ({
+                            color: capitalizeFirstLetter(color),
+                            thumbnail: data.thumbnail,
+                            price: data.price
+                        }))
+                        .sort((a, b) => a.color.localeCompare(b.color));
+
+                    setAvailableColors(colors);
+                }
+            } catch (error) {
+                console.error('Error fetching colors:', error);
+                setError('Failed to load colors');
+            }
+        };
+
+        getColorsForMaterial();
+    }, [selectedModel, selectedBrand, selectedMaterial]);
+
+    const form = useForm({
+        initialValues: {
+            phoneModel: "",
+            material: "",
+            color: "",
+        },
+        validate: {
+            phoneModel: (value) => value ? null : "Please select a phone model",
+            material: (value) => value ? null : "Please select a material",
+            color: (value) => value ? null : "Please select a color"
         }
+    });
 
-        const modelIndex = iPhoneModels.indexOf(selectedModel);
+    const handleSubmit = (values: typeof form.values) => {
+        if (onSubmit) {
+            const queryParams = new URLSearchParams({
+                phoneModel: values.phoneModel,
+                material: values.material,
+                color: values.color,
+            });
+            router.push(`/product-selection?${queryParams.toString()}`);
+            
+            // Find the selected design to get all properties
+            const selectedDesign = designs?.find(design => 
+                design.phoneModel?.toLowerCase() === values.phoneModel.toLowerCase() &&
+                design.material?.toLowerCase() === values.material.toLowerCase() &&
+                design.color?.toLowerCase() === values.color.toLowerCase()
+            );
 
-        const queryParams = new URLSearchParams({
-            phoneModel: selectedModel,
-            caseType: values.variation,
-            caseSecondType: values.secondVar,
-            type: values.variation,
-            color: color,
-            modelIndex: modelIndex.toString()
-        });
-
-        router.push(`/phone-case-editor?${queryParams.toString()}`);
-        console.log("submitted", selectedOptions);
+            if (selectedDesign) {
+                onSubmit({
+                    id: selectedDesign.id,
+                    phoneModel: selectedDesign.phoneModel || '',
+                    phoneBrand: selectedDesign.phoneBrand || '',
+                    thumbnail: selectedDesign.thumbnail || '',
+                    color: selectedDesign.color || '',
+                    material: selectedDesign.material || '',
+                    seller: selectedDesign.seller,
+                    type: selectedDesign.type || 'Transparent',
+                    variation: selectedDesign.variation || '',
+                    price: selectedDesign.price,
+                    mockup: selectedDesign.mockup
+                });
+            }
+        }
     };
 
-    useEffect(() => {
-        const getProducts = async () => {
-            try {
-                const response = await fetch('/api/get-products', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const result = await response.json();
-                console.log(result.currentData);
-                setProducts(result.currentData);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-            }
-        }
-        getProducts();
-    }, []);
-
-    useEffect(() => {
-        const foundProduct = products.find(product => product.productId.toString() === productId);
-        setCurrentProduct(foundProduct);
-    }, [products]);
-
-
-    useEffect(() => {
-        const toggleOptions = () => {
-            if (selectedVar === "Silicone") {
-                const tempArray = ["Matte", "Hawkeye", "Liquid Silicone"];
-                const imageArray = [
-                    "matte edge silicone.png",
-                    "hawkeye matte silicone.png",
-                    "straight edge liquid silicone.png"
-                ];
-                setSecondOptionImage(imageArray);
-                setSecondOptions(tempArray);
-                setSecondLength(3);
-            }
-            else if (selectedVar === "Full Wrap") {
-                const tempArray = ["Hard Case", "Soft Case"]
-                setSecondOptionImage([]);
-                setSecondOptions(tempArray);
-                setSecondLength(2);
-            }
-            else if (selectedVar === "Transparent") {
-                const tempArray = ["Soft", "Airbag", "1.5 mm Thickened", "Space"];
-                const imageArray = [
-                    "soft transparent.png",
-                    "airbag transparent.jpg",
-                    "1.5 mm thickened transparent.png",
-                    "space transparent.png"
-                ];
-                setSecondOptionImage(imageArray);
-                setSecondOptions(tempArray);
-                setSecondLength(4);
-            }
-            else if (selectedVar === "Transparent with Edges") {
-                const tempArray = ["Matte"];
-                const imageArray = [
-                    "matte edge.png"
-                ];
-                setSecondOptionImage(imageArray);
-                setSecondOptions(tempArray);
-                setSecondLength(1);
-            }
-            else if (selectedVar === "Laser Engraving") {
-                const tempArray = ["IMD Laser", "Laser Engraving"];
-                const imageArray = [
-                    "imd laser.jpg",
-                    "laser engraving case.png"
-                ];
-                setSecondOptionImage(imageArray);
-                setSecondOptions(tempArray);
-                setSecondLength(2);
-            }
-            else if (selectedVar === "Tempered Glass") {
-                const tempArray = ["Metallic paint", "Regular"];
-                const imageArray = [
-                    "metallic paint tempered glass.png",
-                    "tempered glass.jpg"
-                ];
-                setSecondOptionImage(imageArray);
-                setSecondOptions(tempArray);
-                setSecondLength(2);
-            }
-            else {
-                setSecondOptions([]);
-                setSecondLength(0);
-            }
-        }
-        toggleOptions();
-    }, [selectedVar]);
-
-
-    useEffect(() => {
-        if (selectedVar === "Mirror" || selectedVar === "Wheat" || selectedVar === "Cream" || selectedSecond === "Laser Engraving") {
-            setUnavailable([
-                "Huawei",
-                "IQOO",
-                "Vivo",
-                "Oppo",
-                "Xiaomi",
-                "Redmi",
-                "OnePlus",
-                "Honor",
-                "Meizu"
-            ])
-        }
-        else {
-            setUnavailable([]);
-        }
-    }, [selectedSecond, selectedVar])
-
     return (
-        <>
-            <Suspense fallback={<div>Loading...</div>}>
-                <form onSubmit={form.onSubmit(handleSubmit)}>
-                    <div className="w-full h-full flex flex-col items-center justify-start p-10">
-                        <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Choose your case</p>
+        <div className="w-full h-full flex flex-col items-center justify-start bg-white">
+            {error && (
+                <div className="text-red-500 mt-4">{error}</div>
+            )}
 
-                        <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }}>
-                            {variations?.map((variation, index) => (
-                                <div key={index} className='flex flex-col items-center justify-center'>
+            {loading ? (
+                <div className="mt-4">Loading...</div>
+            ) : (
+                <div className="flex flex-col items-center w-full max-w-[1200px] px-4">
+                    {!selectedBrand && (
+                        <>
+                            <p className="mt-20 font-Loubag text-[30px] text-[#A594F6]">Select Your Phone Brand</p>
+                            <div className="w-full flex justify-center mt-14">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
+                                    {brands.map((brand, index) => (
+                                        <div 
+                                            key={index}
+                                            onClick={() => setSelectedBrand(brand.originalName)}
+                                            className={`cursor-pointer flex items-center justify-center ${selectedBrand === brand.originalName ? 'ring-2 ring-[#A594F6]' : ''}`}
+                                        >
                                     <Image
-                                        src={varImages.length ? `/assets/phone cases/${varImages[index]}` : "/assets/images/transparent-case.png"}
+                                                src={`/assets/images/${brand.originalName}.png`}
+                                                alt={brand.displayName}
+                                                w={200}
                                         h={200}
-                                        w="auto"
-                                        alt={variation}
+                                                fit="contain"
                                     />
-                                    <Button onClick={(e) => setSelectedVar(variation)} className="my-10" variant="filled" size='l' radius='xl' color={selectedVar === variation ? "#7359b5" : "#A594F6"}>
-                                        <p className=" font-Loubag text-[15px] text-white">{variation}</p>
-                                    </Button>
-                                </div>
-                            ))}
-                        </SimpleGrid>
-
-                        {secondLength > 0 &&
-                            <>
-                                <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Select a variation</p>
-                                <SimpleGrid cols={{
-                                    base: secondLength % 2 === 0 ? 2 : 1,
-                                    sm: secondLength % 3 === 0 ? 3 : 2,
-                                    md: secondLength % 4 === 0 ? 4 : 3,
-                                    lg: secondLength % 5 === 0 ? 5 : 4,
-                                }}
-
-                                >
-                                    {secondOptions?.map((option, index) => (
-                                        <div className='mx-6 flex flex-col items-center justify-center' key={index}>
-                                            <Image
-                                                src={secondOptionImage.length ? `/assets/phone cases/${secondOptionImage[index]}` : "/assets/images/transparent-case.png"}
-                                                h={200}
-                                                w="auto"
-                                            />
-                                            <Button onClick={(e) => setSelectedSecond(option)} className="my-10" variant="filled" radius='xl' color={selectedSecond === option ? "#7359b5" : "#A594F6"}>
-                                                <p className=" font-Loubag text-[15px] text-white">{option}</p>
-                                            </Button>
                                         </div>
                                     ))}
-                                </SimpleGrid>
-                            </>
-                        }
-
-                        <p className="my-20 font-Loubag text-[30px] text-[#A594F6]">Select a Phone Brand and Model</p>
-                        <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }}>
-                            {phoneBrands.map((brand, index) => (
-                                <div key={index} className='flex flex-col items-center justify-end h-60 mx-9'>
-                                    <Image
-                                        src={`/assets/images/${brandImages[index]}`}
-                                        w={100}
-                                        fit="contain"
-                                        h={100}
-                                    />
-                                    <Button disabled={unavailable.includes(brand)} onClick={(e) => setSelectedBrand(brand)} className="my-10" variant="filled" size='l' radius='xl' color={selectedBrand === brand ? "#7359b5" : "#A594F6"}>
-                                        <p className=" font-Loubag text-[15px] text-white">{brand}</p>
-                                    </Button>
                                 </div>
-                            ))}
-                        </SimpleGrid>
+                            </div>
+                        </>
+                    )}
 
-                        {selectedBrand == "iPhone" &&
+                    {selectedBrand && !selectedModel && availableModels.length > 0 && (
+                        <div className="flex flex-col items-center w-full mt-20">
+                            <div className="w-full flex justify-between items-center mb-14">
+                                <button 
+                                    onClick={() => setSelectedBrand('')}
+                                    className="text-[#A594F6] font-Poppins text-lg hover:opacity-80 transition-opacity"
+                                >
+                                    ← Back to Brands
+                                </button>
+                                <p className="font-Loubag text-[30px] text-[#A594F6]">Select a Phone Model</p>
+                                <div className="w-[100px]"></div> {/* Spacer for alignment */}
+                            </div>
+                            <div className="w-full flex justify-center">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
+                                    {availableModels.map((model, index) => (
+                                        <div 
+                                            key={index}
+                                            onClick={() => {
+                                                if (model.phoneModel) {
+                                                    setSelectedModel(model.phoneModel);
+                                                    form.setFieldValue('phoneModel', model.phoneModel);
+                                                }
+                                            }}
+                                            className="cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-start"
+                                        >
+                                            <p className="text-start font-Poppins text-lg font-bold">{model.phoneModel}</p>
+                                            {model.price && (
+                                                <p className="text-start font-Poppins text-lg font-bold text-[#A594F6]">
+                                                    ${formatPrice(model.price)}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                            <SimpleGrid cols={{ base: 2, sm: 3, md: 4, lg: 5 }}>
-                                {iPhoneModels.map((model, index) => (
-                                    <div key={index} className='flex flex-col items-center justify-end h-60 mx-9'>
-                                        <Image
-                                            src={`/assets/frames/${iPhoneModelsImages[index]}`}
-                                            w={100}
-                                            fit="contain"
-                                            h={100}
-                                        />
-                                        <Button onClick={(e) => setSelectedModel(model)} className="my-10" variant="filled" size='l' radius='xl' color={selectedModel === model ? "#7359b5" : "#A594F6"}>
-                                            <p className=" font-Loubag text-[15px] text-white">{model}</p>
-                                        </Button>
-                                    </div>
-                                ))}
-                            </SimpleGrid>
+                    {selectedModel && !selectedMaterial && availableMaterials.length > 0 && (
+                        <div className="flex flex-col items-center w-full mt-20">
+                            <div className="w-full flex justify-between items-center mb-14">
+                                <button 
+                                    onClick={() => setSelectedModel('')}
+                                    className="text-[#A594F6] font-Poppins text-lg hover:opacity-80 transition-opacity"
+                                >
+                                    ← Back to Models
+                                </button>
+                                <p className="font-Loubag text-[30px] text-[#A594F6]">Select a Material</p>
+                                <div className="w-[100px]"></div> {/* Spacer for alignment */}
+                            </div>
+                            <div className="w-full flex justify-center">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
+                                    {availableMaterials.map((material, index) => (
+                                        <div 
+                                            key={index}
+                                            onClick={() => {
+                                                setSelectedMaterial(material.material);
+                                                form.setFieldValue('material', material.material);
+                                            }}
+                                            className="cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-start"
+                                        >
+                                            <Image
+                                                src={material.thumbnail}
+                                                alt={material.material}
+                                                w={200}
+                                                h={200}
+                                                fit="contain"
+                                            />
+                                            <p className="text-start font-Poppins text-lg font-bold mt-4">{material.material}</p>
+                                            <p className="text-start font-Poppins text-lg font-bold text-[#A594F6]">
+                                                    {formatPrice(material.minPrice)} - {formatPrice(material.maxPrice)}
+                                                </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                        }
+                    {selectedMaterial && availableColors.length > 0 && (
+                        <div className="flex flex-col items-center w-full mt-20">
+                            <div className="w-full flex justify-between items-center mb-14">
+                                <button 
+                                    onClick={() => setSelectedMaterial('')}
+                                    className="text-[#A594F6] font-Poppins text-lg hover:opacity-80 transition-opacity"
+                                >
+                                    ← Back to Materials
+                                </button>
+                                <p className="font-Loubag text-[30px] text-[#A594F6]">Select a Color</p>
+                                <div className="w-[100px]"></div> {/* Spacer for alignment */}
+                            </div>
+                            <div className="w-full flex justify-center">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
+                                    {availableColors.map((color, index) => (
+                                        <div 
+                                            key={index}
+                                            onClick={() => {
+                                                form.setFieldValue('color', color.color);
+                                                // Find the selected design
+                                                const selectedDesign = designs?.find(design => 
+                                                    design.phoneModel?.toLowerCase() === selectedModel.toLowerCase() &&
+                                                    design.material?.toLowerCase() === selectedMaterial.toLowerCase() &&
+                                                    design.color?.toLowerCase() === color.color.toLowerCase()
+                                                );
 
-                        <Button type="submit" className="my-10" variant="gradient" size='xl' radius='xl' gradient={{ from: '#FFC3FE', to: '#B5F5FC', deg: 90 }}
-                            styles={{
-                                root: {
-                                    filter: 'drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1))'
-                                }
-                            }}
-                        >
-                            <p className="drop-shadow-md text-[28px] font-Poppins font-black">Design Your Case</p>
-                        </Button>
+                                                if (selectedDesign && onSubmit) {
+                                                    const queryParams = new URLSearchParams({
+                                                        phoneModel: selectedDesign.phoneModel || '',
+                                                        material: selectedDesign.material || '',
+                                                        color: selectedDesign.color || '',
+                                                    });
+                                                    router.push(`/product-selection?${queryParams.toString()}`);
+                                                    
+                                                    onSubmit({
+                                                        id: selectedDesign.id,
+                                                        phoneModel: selectedDesign.phoneModel || '',
+                                                        phoneBrand: selectedDesign.phoneBrand || '',
+                                                        thumbnail: selectedDesign.thumbnail || '',
+                                                        color: selectedDesign.color || '',
+                                                        material: selectedDesign.material || '',
+                                                        seller: selectedDesign.seller,
+                                                        type: selectedDesign.type || 'Transparent',
+                                                        variation: selectedDesign.variation || '',
+                                                        price: selectedDesign.price,
+                                                        mockup: selectedDesign.mockup
+                                                    });
+                                                }
+                                            }}
+                                            className="cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-start"
+                                        >
+                                            <Image
+                                                src={color.thumbnail}
+                                                alt={color.color}
+                                                w={200}
+                                                h={200}
+                                                fit="contain"
+                                            />
+                                            <p className="text-start font-Poppins text-lg font-bold mt-4">{color.color}</p>
+                                            <p className="text-start font-Poppins text-lg font-bold text-[#A594F6]">
+                                                {formatPrice(color.price)}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
                     </div>
-                </form>
-            </Suspense>
-        </>
-    )
+    );
 }
