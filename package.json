@@ -8,13 +8,13 @@
     "start": "next start",
     "lint": "next lint",
     "generate-types": "supabase gen types typescript --project-id oaketamedylogwrmddnp --schema public > lib/database/types.ts"
-
   },
   "dependencies": {
     "@iamtraction/google-translate": "^2.0.1",
     "@mantine/core": "^7.12.0",
     "@mantine/form": "^7.12.2",
     "@mantine/hooks": "^7.12.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "^0.4.0",
     "@supabase/supabase-js": "^2.44.4",
     "canvas": "^3.0.1",

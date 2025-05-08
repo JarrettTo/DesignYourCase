@@ -616,7 +616,7 @@ function PhoneCaseEditor({
         throw new Error("User must be logged in to save designs");
       }
 
-      // 1. Create the design record first to get the ID
+      // Create the design record
       const { data: designRecord, error: designError } = await supabase
         .from('designs')
         .insert({
@@ -634,7 +634,7 @@ function PhoneCaseEditor({
       const designId = designRecord.id;
       console.log("Created design record with ID:", designId);
 
-      // 2. Upload the stage image
+      // Upload the stage image
       const stageImageFile = await fetch(designData.designImage).then((res) => res.blob());
       const stageImagePath = `design-images/${userEmail}/${designId}/stage.png`;
       
@@ -646,11 +646,10 @@ function PhoneCaseEditor({
         throw new Error("Failed to upload stage image: " + stageUploadError.message);
       }
 
-      // 3. Upload individual images
+      // Upload individual images
       for (let i = 0; i < images.length; i++) {
         const image = images[i];
         if (image.image) {
-          // Convert image to blob
           const response = await fetch(image.image.src);
           const blob = await response.blob();
           
@@ -662,13 +661,12 @@ function PhoneCaseEditor({
 
           if (imageUploadError) {
             console.error(`Failed to upload image ${i + 1}:`, imageUploadError);
-            // Continue with other images even if one fails
             continue;
           }
         }
       }
 
-      // 4. Redirect to dashboard
+      // Redirect to dashboard
       router.push('/dashboard');
     } catch (error) {
       console.error("Error adding to cart:", error);
@@ -678,62 +676,75 @@ function PhoneCaseEditor({
     }
   }
 
-  async function handleCheckoutNow() {
+  async function handleCheckout() {
     setIsLoading(true);
     try {
       const designData = await getDesignData();
       if (!designData) {
         throw new Error("Failed to get design data");
       }
-
-      // Get the current user (or guest ID if not logged in)
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || 'guest-' + uuidv4();
-
-      // 1. Upload the image to Supabase Storage
-      const imageFile = await fetch(designData.designImage).then((res) => res.blob());
-      const imageFileName = `design-images/${userId}/${uuidv4()}.png`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('phone-case-designs')
-        .upload(imageFileName, imageFile);
-
-      if (uploadError) {
-        throw new Error("Failed to upload design image: " + uploadError.message);
+  
+      // Get the current user's email
+      const userEmail = session?.user?.email;
+      if (!userEmail) {
+        throw new Error("User must be logged in to save designs");
       }
 
-      // Get the public URL for the uploaded image
-      const { data: { publicUrl } } = supabase.storage
-        .from('phone-case-designs')
-        .getPublicUrl(imageFileName);
-
-      // 2. Save the design data to the database
-      const caseData = {
-        user_id: user?.id,
-        image_url: publicUrl,
-        phone_model: phoneModel,
-        case_type: type,
-        color: color
-      };
-
-      const { data, error } = await supabase
+      // Create the design record
+      const { data: designRecord, error: designError } = await supabase
         .from('designs')
-        .insert(caseData)
-        .select();
+        .insert({
+          user_id: userEmail,
+          case_style_id: id,
+          design_data: designData.designJSON
+        })
+        .select()
+        .single();
 
-      if (error) {
-        throw new Error("Failed to save design: " + error.message);
+      if (designError || !designRecord) {
+        throw new Error("Failed to create design record: " + designError?.message);
       }
 
-      // 3. Redirect to checkout with the design ID
-      if (data && data[0]) {
-        router.push(`/checkout?designId=${data[0].id}`);
-      } else {
-        throw new Error("Design was saved but no ID was returned");
+      const designId = designRecord.id;
+      console.log("Created design record with ID:", designId);
+
+      // Upload the stage image
+      const stageImageFile = await fetch(designData.designImage).then((res) => res.blob());
+      const stageImagePath = `design-images/${userEmail}/${designId}/stage.png`;
+      
+      const { error: stageUploadError } = await supabase.storage
+        .from('phone-case-designs')
+        .upload(stageImagePath, stageImageFile);
+
+      if (stageUploadError) {
+        throw new Error("Failed to upload stage image: " + stageUploadError.message);
       }
+
+      // Upload individual images
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        if (image.image) {
+          const response = await fetch(image.image.src);
+          const blob = await response.blob();
+          
+          const imagePath = `design-images/${userEmail}/${designId}/image_${i + 1}.png`;
+          
+          const { error: imageUploadError } = await supabase.storage
+            .from('phone-case-designs')
+            .upload(imagePath, blob);
+
+          if (imageUploadError) {
+            console.error(`Failed to upload image ${i + 1}:`, imageUploadError);
+            continue;
+          }
+        }
+      }
+
+      // Redirect to checkout with the design ID
+      router.push(`/checkout?designs=${designId}`);
     } catch (error) {
-      console.error("Error proceeding to checkout:", error);
-      alert("Failed to proceed to checkout. Please try again.");
+      console.error("Error during checkout:", error);
+      alert("Failed to process checkout. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -889,7 +900,7 @@ function PhoneCaseEditor({
             style={{
               background: 'linear-gradient(to right, #F4D7EA, #D9FBFE)'
             }}
-            onClick={handleCheckoutNow}
+            onClick={handleCheckout}
             disabled={isLoading}
           >
             <MdShoppingCartCheckout size={"1.2rem"} className="mr-2" />

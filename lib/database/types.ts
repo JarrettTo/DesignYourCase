@@ -55,22 +55,25 @@ export type Database = {
         Row: {
           case_style_id: number
           created_at: string | null
+          design_data: Json | null
           id: string
-          image_url: string
+          image_url: string | null
           user_id: string | null
         }
         Insert: {
           case_style_id: number
           created_at?: string | null
+          design_data?: Json | null
           id?: string
-          image_url: string
+          image_url?: string | null
           user_id?: string | null
         }
         Update: {
           case_style_id?: number
           created_at?: string | null
+          design_data?: Json | null
           id?: string
-          image_url?: string
+          image_url?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -181,6 +184,20 @@ export type Database = {
           thumbnail: string | null
           type: string | null
           variation: string | null
+        }[]
+      }
+      get_designs_with_details: {
+        Args: { design_ids: string[] }
+        Returns: {
+          id: string
+          user_id: string
+          case_style_id: number
+          phone_model: string
+          phone_brand: string
+          material: string
+          color: string
+          price: number
+          mockup: string
         }[]
       }
       get_user_orders: {
