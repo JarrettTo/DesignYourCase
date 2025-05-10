@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 // import { notFound } from 'next/navigation'; // notFound is typically for Server Components hitting specific routes
-import { Box, Title, Text, Loader, Button as MantineButton } from '@mantine/core'; // Added Loader and MantineButton
+import { Box, Title, Text, Loader, Button as MantineButton, SimpleGrid, AspectRatio, Card, Group, Stack } from '@mantine/core'; // Added Loader and MantineButton
 import { useSession } from 'next-auth/react' // Keep useSession
 
 // Import the DesignDisplay component
@@ -47,13 +47,13 @@ interface LoadedDesignData {
 
 interface FetchedDesign {
     id: string;
-    created_at: string; 
-    user_id: string | null; 
+    created_at: string;
+    user_id: string | null;
     design_data: LoadedDesignData;
-    image_url: string; 
+    image_url: string;
     phone_model: string;
     case_material: string;
-    case_style: string; 
+    case_style: string;
 }
 
 
@@ -80,8 +80,8 @@ export default function DesignListPage() { // Renamed component to reflect it li
             });
 
             if (!response.ok) {
-                 const errorData = await response.json();
-                 throw new Error(errorData.message || 'Failed to fetch designs');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to fetch designs');
             }
 
             // Your API route should return an array of design objects
@@ -105,10 +105,10 @@ export default function DesignListPage() { // Renamed component to reflect it li
         if (status === 'authenticated' && session?.user?.email) {
             getCases(session.user.email);
         } else if (status === 'unauthenticated') {
-             // If not authenticated, clear designs and stop loading
+            // If not authenticated, clear designs and stop loading
             setDesigns([]);
             setIsLoading(false);
-             setError('Please sign in to view your saved designs.'); // Show message for unauthenticated
+            setError('Please sign in to view your saved designs.'); // Show message for unauthenticated
         }
         // If status is 'loading', do nothing, wait for it to become authenticated/unauthenticated
 
@@ -126,72 +126,74 @@ export default function DesignListPage() { // Renamed component to reflect it li
         );
     }
 
-    // Show error message
     if (error) {
-         return (
+        return (
             <Box p="xl" ta="center">
                 <Title order={2}>Error</Title>
                 <Text>{error}</Text>
-                 {/* Optional: Button to retry fetching */}
-                 {status === 'authenticated' && session?.user?.email && (
-                     <MantineButton onClick={() => getCases(session?.user?.email)} mt="lg">Retry Loading</MantineButton>
-                 )}
+                {/* Optional: Button to retry fetching */}
+                {status === 'authenticated' && session?.user?.email && (
+                    <MantineButton onClick={() => getCases(session?.user?.email)} mt="lg">Retry Loading</MantineButton>
+                )}
             </Box>
-         );
+        );
     }
 
-    // Show message if no designs are found after loading
     if (designs.length === 0 && status === 'authenticated') {
-         return (
+        return (
             <Box p="xl" ta="center">
                 <Title order={2}>No Designs Found</Title>
                 <Text>It looks like you haven't saved any designs yet.</Text>
-                 {/* Optional: Button to go create a design */}
-                 <MantineButton component="a" href="/" mt="lg">Create a Design</MantineButton> {/* Adjust '/' to your selection page path */}
+                {/* Optional: Button to go create a design */}
+                <MantineButton component="a" href="/" mt="lg">Create a Design</MantineButton> {/* Adjust '/' to your selection page path */}
             </Box>
-         );
+        );
     }
 
-     // Show message if user is not signed in
-     if (status === 'unauthenticated') {
-         return (
-             <Box p="xl" ta="center">
-                 <Title order={2}>Sign In Required</Title>
-                 <Text>Please sign in to view your saved designs.</Text>
-                 {/* Optional: Add a sign-in button if you have one */}
-                 {/* <MantineButton onClick={() => signIn('google')} mt="lg">Sign In</MantineButton> */}
-             </Box>
-         );
-     }
+    if (status === 'unauthenticated') {
+        return (
+            <Box p="xl" ta="center">
+                <Title order={2}>Sign In Required</Title>
+                <Text>Please sign in to view your saved designs.</Text>
+            </Box>
+        );
+    }
+    const originalStageWidth = 300;
+    const originalStageHeight = 600;
 
+    const previewScaleFactor = 0.5;
 
-    // If not loading, no error, and designs exist, map over them
+    const scaledWidth = originalStageWidth * previewScaleFactor;
+    const scaledHeight = originalStageHeight * previewScaleFactor;
+
     return (
-        <Box p="xl"> {/* Use a layout box for the entire list page */}
+        <div className="flex flex-col w-full min-h-screen">
             <Title order={1} ta="center" mb="xl">My Saved Designs</Title>
 
-            {/* Iterate over the designs array and render DesignDisplay for each */}
-            {designs.map((designItem) => (
-                // Use a key prop for each item when mapping over arrays
-                <Box key={designItem.id} mb="xl" pb="xl" style={{ borderBottom: '1px solid #eee' }}> {/* Add styling for separation */}
-                    {/* Display some info about the design item */}
-                     <Text ta="center" size="lg" mb="md" fw={600}>
-                         {designItem.phone_model} | {designItem.case_material} | {designItem.case_style}
-                     </Text>
-                     {/* You could also display created_at, etc. */}
-                     {/* <Text size="sm" c="dimmed" ta="center">Saved on: {new Date(designItem.created_at).toLocaleString()}</Text> */}
+            <div className="flex-row items-start justify-center">
+                {designs.map((designItem) => (
+                    <div>
+                        <DesignDisplay
+                            designDataJson={designItem.design_data}
+                            phoneModel={designItem.phone_model}
+                            caseMaterial={designItem.case_material}
+                            caseStyle={designItem.case_style}
+                            visualWidth={scaledWidth}
+                            visualHeight={scaledHeight}
+                        />
 
 
-                    {/* Render the DesignDisplay component for the individual design */}
-                    <DesignDisplay
-                        designDataJson={designItem.design_data} // Pass the JSON string
-                        phoneModel={designItem.phone_model}
-                        caseMaterial={designItem.case_material}
-                        caseStyle={designItem.case_style}
-                    />
-                     {/* Optional: Add buttons like 'Edit' or 'Add to Cart' for each design */}
-                </Box>
-            ))}
-        </Box>
+                        <Stack gap="xs" mt="md" mb="xs">
+                            <Text fw={700} size="md">{designItem.phone_model}</Text>
+                            <Group justify="space-between"> {/* Group is horizontal */}
+                                <Text size="sm" c="dimmed">{designItem.case_material}</Text>
+                                <Text size="sm" c="dimmed">{designItem.case_style}</Text>
+                            </Group>
+                            <Text size="xs" c="gray">Saved on: {new Date(designItem.created_at).toLocaleDateString()}</Text>
+                        </Stack>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
 }

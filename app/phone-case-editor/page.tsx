@@ -22,14 +22,7 @@ function EditorPage() {
     <MantineProvider>
       <main className="flex flex-col w-full min-h-screen">
         <Suspense fallback={<div>Loading...</div>}>
-          <PhoneCaseEditor
-            type={type as 'Transparent' | 'Colored'}
-            color={color}
-            phoneModel={phoneModel}
-            modelIndex={modelIndex}
-            caseType={''}
-            caseSecondType={''}
-          />
+          <PhoneCaseEditor/>
         </Suspense>
       </main>
     </MantineProvider>
