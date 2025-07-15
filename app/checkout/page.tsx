@@ -5,6 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Image from 'next/image';
 import { IoCloudUploadOutline } from "react-icons/io5";
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { v4 as uuidv4 } from 'uuid';
 
 interface Design {
   id: string;
@@ -34,6 +37,12 @@ export default function CheckoutPage() {
   });
   const [discountCode, setDiscountCode] = useState('');
   const [discountApplied, setDiscountApplied] = useState(false);
+  const [receiptImage, setReceiptImage] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
   useEffect(() => {
     const designIds = searchParams.get('designs')?.split(',') || [];
@@ -148,12 +157,104 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement order creation
-    console.log('Form submitted:', formData);
+    if (!session?.user?.email) {
+      alert('You must be logged in to place an order.');
+      return;
+    }
+    if (!designs.length) {
+      alert('No design selected.');
+      return;
+    }
+    if (!receiptImage) {
+      alert('Please upload a payment receipt.');
+      return;
+    }
+    try {
+      // 1. Get user id (int) from user table by email
+      const { data: userData, error: userError } = await supabase
+        .from('user')
+        .select('id')
+        .eq('email', session.user.email)
+        .single();
+      if (userError || !userData) {
+        throw new Error('Could not find user record.');
+      }
+      const userId = userData.id;
+      // 2. Upload receipt image to payment-screenshots/{design_id}/<datetime>.ext (use first design for path)
+      const designId = designs[0].id;
+      const fileExt = receiptImage.name.split('.').pop();
+      const now = new Date();
+      const dateStr = now.toISOString().replace(/[:.]/g, '-');
+      const filePath = `${designId}/${dateStr}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('payment-screenshots')
+        .upload(filePath, receiptImage);
+      if (uploadError) {
+        throw new Error('Failed to upload receipt image.');
+      }
+      // 3. Get public URL for uploaded image
+      const { data: publicUrlData } = supabase.storage
+        .from('payment-screenshots')
+        .getPublicUrl(filePath);
+      const proofOfPaymentUrl = publicUrlData?.publicUrl;
+      // 4. Generate a unique order_id for this group of orders
+      const orderId = uuidv4();
+      // 5. Insert an order for each design
+      for (const design of designs) {
+        const { error: orderError } = await supabase
+          .from('orders')
+          .insert({
+            customer_id: userId,
+            design_id: design.id,
+            order_id: orderId,
+            whatsapp: formData.whatsapp,
+            collection_method: formData.deliveryMethod,
+            address: formData.deliveryMethod === 'delivery' ? formData.address : null,
+            proof_of_payment: proofOfPaymentUrl,
+            discount_code: discountApplied ? discountCode : null,
+          });
+        if (orderError) {
+          throw new Error('Failed to create order for design ' + design.id);
+        }
+      }
+      setOrderNumber(orderId);
+      setOrderSuccess(true);
+    } catch (err: any) {
+      alert(err.message || 'Order failed.');
+    }
   };
 
   if (loading) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+  }
+
+  if (orderSuccess) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center bg-white p-8 rounded-lg shadow-md">
+          <div className="mb-6">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="12" fill="#22C55E"/>
+              <path d="M7 13.5L11 17L17 9.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-center">Order Placed Successfully!</h2>
+          <div className="text-lg font-semibold mb-2 text-center">Order # {orderNumber}</div>
+          <p className="text-center mb-6">
+            Thank you for your order!<br/>
+            Your order is being processed. You'll receive an order confirmation on WhatsApp once we verify your payment.<br/><br/>
+            If you have any questions, please feel free to contact us!
+          </p>
+          <button
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md text-white transition-opacity cursor-pointer text-lg font-semibold"
+            style={{ background: 'linear-gradient(to right, #FB98D7, #51F0FD)' }}
+            onClick={() => router.push('/product-selection')}
+          >
+            Home
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -296,17 +397,30 @@ export default function CheckoutPage() {
                   <p className="font-mono">12102912901290</p>
                 </div>
               </div>
-
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md text-white transition-opacity"
-                style={{
-                  background: 'linear-gradient(to right, #FB98D7, #51F0FD)'
-                }}
-              >
-                <IoCloudUploadOutline size={20} />
-                Upload Image
-              </button>
+              <div>
+                <input
+                  id="receipt-upload"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setReceiptImage(file);
+                      setReceiptPreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+                <label htmlFor="receipt-upload" className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md text-white transition-opacity cursor-pointer" style={{ background: 'linear-gradient(to right, #FB98D7, #51F0FD)' }}>
+                  <IoCloudUploadOutline size={20} />
+                  {receiptImage ? 'Change Image' : 'Upload Image'}
+                </label>
+                {receiptPreview && (
+                  <div className="mt-2 flex justify-center">
+                    <img src={receiptPreview} alt="Receipt Preview" className="max-h-40 rounded shadow" />
+                  </div>
+                )}
+              </div>
             </div>
 
             <button
