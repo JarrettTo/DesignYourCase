@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import nodemailer from 'nodemailer';
+import { cookies } from 'next/headers';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createRouteHandlerClient({ cookies });
 
 async function sendEmail(to: string, subject: string, text: string, html?: string, attachments?: any[]) {
   // Configure nodemailer for Mailjet SMTP
