@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Image from 'next/image';
 import { IoCloudUploadOutline } from "react-icons/io5";
@@ -24,7 +25,7 @@ interface Design {
   image_urls: string[];
 }
 
-export default function CheckoutPage() {
+function CheckoutPageInner() {
   const searchParams = useSearchParams();
   const supabase = createClientComponentClient();
   const [designs, setDesigns] = useState<Design[]>([]);
@@ -234,7 +235,7 @@ export default function CheckoutPage() {
           <div className="text-lg font-semibold mb-2 text-center">Order # {orderNumber}</div>
           <p className="text-center mb-6">
             Thank you for your order!<br/>
-            Your order is being processed. You'll receive an order confirmation on WhatsApp once we verify your payment.<br/><br/>
+            Your order is being processed. You&apos;ll receive an order confirmation on WhatsApp once we verify your payment.<br/><br/>
             If you have any questions, please feel free to contact us!
           </p>
           <button
@@ -425,5 +426,13 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense>
+      <CheckoutPageInner />
+    </Suspense>
   );
 } 

@@ -4,6 +4,7 @@ import '@mantine/core/styles.css';
 import { MantineProvider, createTheme } from '@mantine/core';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 import ProductSelection from "@/components/product-selection";
 import PhoneCaseEditor from "@/components/case-editor";
@@ -65,7 +66,7 @@ interface SelectedOptions {
   mockup: string | null;
 }
 
-export default function ProductSelect() {
+function ProductSelectInner() {
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId');
 
@@ -110,5 +111,13 @@ export default function ProductSelect() {
         )}
       </main>
     </MantineProvider>
+  );
+}
+
+export default function ProductSelect() {
+  return (
+    <Suspense>
+      <ProductSelectInner />
+    </Suspense>
   );
 }

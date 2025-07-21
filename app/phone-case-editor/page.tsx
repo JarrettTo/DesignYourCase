@@ -6,7 +6,7 @@ import PhoneCaseEditor from '@/components/case-editor';
 
 
 
-function EditorPage() {
+function EditorPageInner() {
   const searchParams = useSearchParams();
   
   const allowedTypes = ['Transparent', 'Colored'] as const;
@@ -24,4 +24,10 @@ function EditorPage() {
   );
 }
 
-export default EditorPage;
+export default function EditorPage() {
+  return (
+    <Suspense>
+      <EditorPageInner />
+    </Suspense>
+  );
+}
