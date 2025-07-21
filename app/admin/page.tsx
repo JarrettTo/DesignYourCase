@@ -65,7 +65,7 @@ export default function AdminPage() {
     setLoading(true);
     let query = supabase
       .from("orders")
-      .select(`*, designs(*, case_styles(*)), user:customer_id(email)`)
+      .select(`*, designs(*, case_styles(*))`)
       .order("created_at", { ascending: sortOrder === 'asc' });
 
     // Filtering
@@ -73,7 +73,6 @@ export default function AdminPage() {
     if (filters.phoneModel) query = query.eq('designs.case_styles.phoneModel', filters.phoneModel);
     if (filters.color) query = query.eq('designs.case_styles.color', filters.color);
     if (filters.material) query = query.eq('designs.case_styles.material', filters.material);
-    if (filters.email) query = query.ilike('user.email', `%${filters.email}%`);
     if (activeTab === true) query = query.eq('status', true);
     if (activeTab === false) query = query.eq('status', false);
     if (activeTab === null) query = query.is('status', null);
@@ -83,9 +82,19 @@ export default function AdminPage() {
     const to = from + PAGE_SIZE - 1;
     query = query.range(from, to);
 
-    const { data, error, count } = await query;
-    if (!error && data) {
-      setOrders(data);
+    const { data: orders, error, count } = await query;
+    let ordersWithEmail = orders || [];
+    if (!error && orders && orders.length > 0) {
+      // Get unique customer_ids
+      const customerIds = Array.from(new Set(orders.map(order => order.customer_id).filter(Boolean)));
+      // Fetch emails for those customer_ids from user table
+      const { data: users } = await supabase
+        .from('user')
+        .select('id, email')
+        .in('id', customerIds);
+      const userMap = Object.fromEntries((users || []).map(u => [u.id, u.email]));
+      ordersWithEmail = orders.map(order => ({ ...order, email: userMap[order.customer_id] || '' }));
+      setOrders(ordersWithEmail);
       setTotalPages(Math.ceil((count || 0) / PAGE_SIZE) || 1);
     }
     setLoading(false);
@@ -132,7 +141,7 @@ export default function AdminPage() {
     if (filters.phoneModel && order.designs?.case_styles?.phoneModel !== filters.phoneModel) return false;
     if (filters.color && order.designs?.case_styles?.color !== filters.color) return false;
     if (filters.material && order.designs?.case_styles?.material !== filters.material) return false;
-    if (filters.email && !(order.user?.email || '').toLowerCase().includes(filters.email.toLowerCase())) return false;
+    if (filters.email && !(order.email || '').toLowerCase().includes(filters.email.toLowerCase())) return false;
     return true;
   });
 
@@ -234,7 +243,7 @@ export default function AdminPage() {
               filteredOrders.map((order) => (
                 <tr key={order.order_id} className="border-b">
                   <td className="p-4 border">{order.order_id}</td>
-                  <td className="p-4 border">{order.user?.email || order.customer_id}</td>
+                  <td className="p-4 border">{order.email || order.customer_id}</td>
                   <td className="p-4 border">
                     {order.designs?.image_url ? (
                       <a href={order.designs.image_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">View</a>

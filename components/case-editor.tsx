@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useSession } from 'next-auth/react'
+import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -28,13 +28,13 @@ import { ACTIONS } from "../constants";
 import useImage from 'use-image';
 import Konva from 'konva';
 import { Node, NodeConfig } from 'konva/lib/Node';
-import { createClient } from '@supabase/supabase-js';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { CaseType } from '@/lib/database/styles';
 
 // Create Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClientComponentClient();
 
 // Define types for the shapes and actions
 type ShapeType = 'RECTANGLE' | 'CIRCLE' | 'ARROW' | 'SCRIBBLE' | 'TEXT';
@@ -126,7 +126,7 @@ function PhoneCaseEditor({
     price,
     mockup
 }: PhoneCaseEditorProps) {  
-  const { data: session } = useSession();  
+  const { session } = useSessionContext();  
   const router = useRouter();
   const [phoneModel, setPhoneModel] = useState(initialPhoneModel);
   const searchParams = useSearchParams();
@@ -620,9 +620,9 @@ function PhoneCaseEditor({
         throw new Error("Failed to get design data");
       }
   
-      // Get the current user's email
-      const userEmail = session?.user?.email;
-      if (!userEmail) {
+      // Get the current user's id
+      const userId = session?.user?.id;
+      if (!userId) {
         throw new Error("User must be logged in to save designs");
       }
 
@@ -630,7 +630,7 @@ function PhoneCaseEditor({
       const { data: designRecord, error: designError } = await supabase
         .from('designs')
         .insert({
-          user_id: userEmail,
+          user_id: userId,
           case_style_id: id,
           design_data: designData.designJSON
         })
@@ -655,7 +655,7 @@ function PhoneCaseEditor({
 
       // Upload the stage image
       const stageImageFile = await fetch(designData.designImage).then((res) => res.blob());
-      const stageImagePath = `design-images/${userEmail}/${designId}/stage.png`;
+      const stageImagePath = `design-images/${userId}/${designId}/stage.png`;
       const { error: stageUploadError } = await supabase.storage
         .from('phone-case-designs')
         .upload(stageImagePath, stageImageFile);
@@ -679,7 +679,7 @@ function PhoneCaseEditor({
         if (image.image) {
           const response = await fetch(image.image.src);
           const blob = await response.blob();
-          const imagePath = `design-images/${userEmail}/${designId}/image_${i + 1}.png`;
+          const imagePath = `design-images/${userId}/${designId}/image_${i + 1}.png`;
           const { error: imageUploadError } = await supabase.storage
             .from('phone-case-designs')
             .upload(imagePath, blob);
@@ -691,7 +691,7 @@ function PhoneCaseEditor({
       }
 
       // Redirect to dashboard
-      router.push('/dashboard');
+      router.push('/cart');
     } catch (error) {
       console.error("Error adding to cart:", error);
       alert("Failed to add design to cart. Please try again.");
@@ -718,9 +718,9 @@ function PhoneCaseEditor({
         throw new Error("Failed to get design data");
       }
   
-      // Get the current user's email
-      const userEmail = session?.user?.email;
-      if (!userEmail) {
+      // Get the current user's id
+      const userId = session?.user?.id;
+      if (!userId) {
         throw new Error("User must be logged in to save designs");
       }
 
@@ -728,7 +728,7 @@ function PhoneCaseEditor({
       const { data: designRecord, error: designError } = await supabase
         .from('designs')
         .insert({
-          user_id: userEmail,
+          user_id: userId,
           case_style_id: id,
           design_data: designData.designJSON
         })
@@ -753,7 +753,7 @@ function PhoneCaseEditor({
 
       // Upload the stage image
       const stageImageFile = await fetch(designData.designImage).then((res) => res.blob());
-      const stageImagePath = `design-images/${userEmail}/${designId}/stage.png`;
+      const stageImagePath = `design-images/${userId}/${designId}/stage.png`;
       const { error: stageUploadError } = await supabase.storage
         .from('phone-case-designs')
         .upload(stageImagePath, stageImageFile);
@@ -777,7 +777,7 @@ function PhoneCaseEditor({
         if (image.image) {
           const response = await fetch(image.image.src);
           const blob = await response.blob();
-          const imagePath = `design-images/${userEmail}/${designId}/image_${i + 1}.png`;
+          const imagePath = `design-images/${userId}/${designId}/image_${i + 1}.png`;
           const { error: imageUploadError } = await supabase.storage
             .from('phone-case-designs')
             .upload(imagePath, blob);

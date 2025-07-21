@@ -1,18 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-import { useSession } from "next-auth/react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useSessionContext } from "@supabase/auth-helpers-react";
 import { useRouter } from "next/navigation";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createClientComponentClient();
 
 const TABS = ["Designs", "Orders"];
 
 export default function CartPage() {
-  const { data: session } = useSession();
+  const { session } = useSessionContext();
   const user = session?.user;
   const [activeTab, setActiveTab] = useState("Designs");
   const [userId, setUserId] = useState<number | null>(null);
@@ -36,6 +33,8 @@ export default function CartPage() {
   }, [user]);
 
   useEffect(() => {
+    if (!user?.id) return;
+    console.log("USER ID:", user?.id)
     setLoading(true);
     const fetchData = async () => {
       // Fetch all designs
@@ -51,7 +50,7 @@ export default function CartPage() {
       setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   // Handler to delete a design
   const handleDelete = async (designId: string) => {
@@ -59,13 +58,24 @@ export default function CartPage() {
     setDesigns((prev) => prev.filter((d) => d.id !== designId));
   };
 
+  const handleDeleteSelected = async () => {
+    if (selectedDesigns.length === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedDesigns.length} selected design(s)?`)) {
+        await supabase.from("designs").delete().in("id", selectedDesigns);
+        setDesigns((prev) => prev.filter((d) => !selectedDesigns.includes(d.id)));
+        setSelectedDesigns([]);
+    }
+  };
+
   // Handler for selecting/deselecting a design
   const handleSelect = (designId: string) => {
-    setSelectedDesigns((prev) =>
-      prev.includes(designId)
-        ? prev.filter((id) => id !== designId)
-        : [...prev, designId]
-    );
+    setSelectedDesigns((prev) => {
+      if (prev.includes(designId)) {
+        return prev.filter((id) => id !== designId);
+      } else {
+        return [...prev, designId];
+      }
+    });
   };
 
   // Handler for single checkout
@@ -84,7 +94,7 @@ export default function CartPage() {
   const SMTP_FROM = process.env.NEXT_PUBLIC_SMTP_FROM || process.env.SMTP_FROM || "";
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
+    <div className="max-w-3xl mx-auto py-8 px-8">
       <h1 className="text-3xl font-bold mb-6">Your Cart</h1>
       <div className="flex space-x-4 mb-6">
         {TABS.map((tab) => (
@@ -138,32 +148,27 @@ export default function CartPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <button
-                          className="px-3 py-1 rounded bg-purple text-white text-xs font-semibold hover:bg-purple-700"
-                          onClick={() => handleSingleCheckout(design.id)}
-                        >
-                          Checkout
-                        </button>
-                        <button
-                          className="px-3 py-1 rounded bg-red-100 text-red-700 text-xs font-semibold hover:bg-red-200"
-                          onClick={() => handleDelete(design.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
+                  
                     </div>
                   ))
               )}
-              {/* Floating multi-checkout button */}
-              {selectedDesigns.length > 1 && (
-                <button
-                  className="fixed bottom-8 right-8 z-50 px-6 py-3 rounded-full bg-purple text-white text-lg font-bold shadow-lg hover:bg-purple-700 transition-all"
-                  onClick={handleMultiCheckout}
-                >
-                  Checkout
-                </button>
-              )}
+              {/* Floating action buttons */}
+              <div className="fixed bottom-8 right-8 z-50 flex flex-col md:flex-row gap-4">
+                  <button
+                      className={`px-6 py-3 rounded-full text-white text-lg font-bold shadow-lg transition-all ${selectedDesigns.length > 0 ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                      onClick={handleDeleteSelected}
+                      disabled={selectedDesigns.length === 0}
+                  >
+                      Delete {selectedDesigns.length > 0 ? `(${selectedDesigns.length})` : ''}
+                  </button>
+                  <button
+                      className={`px-6 py-3 rounded-full text-white text-lg font-bold shadow-lg transition-all ${selectedDesigns.length > 0 ? 'bg-purple hover:bg-purple-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                      onClick={() => router.push(`/checkout?designs=${selectedDesigns.join(",")}`)}
+                      disabled={selectedDesigns.length === 0}
+                  >
+                      Checkout {selectedDesigns.length > 0 ? `(${selectedDesigns.length})` : ''}
+                  </button>
+              </div>
             </div>
           )}
           {activeTab === "Orders" && (

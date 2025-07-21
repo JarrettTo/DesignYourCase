@@ -89,13 +89,6 @@ export type Database = {
             referencedRelation: "case_styles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "designs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user"
-            referencedColumns: ["email"]
-          },
         ]
       }
       orders: {
@@ -104,11 +97,12 @@ export type Database = {
           address: string | null
           collection_method: string | null
           created_at: string | null
-          customer_id: number | null
+          customer_id: string | null
           design_id: string
           discount_code: string | null
           order_id: string
           proof_of_payment: string | null
+          status: boolean | null
           updated_at: string | null
           whatsapp: string | null
         }
@@ -117,11 +111,12 @@ export type Database = {
           address?: string | null
           collection_method?: string | null
           created_at?: string | null
-          customer_id?: number | null
+          customer_id?: string | null
           design_id: string
           discount_code?: string | null
-          order_id: string
+          order_id?: string
           proof_of_payment?: string | null
+          status?: boolean | null
           updated_at?: string | null
           whatsapp?: string | null
         }
@@ -130,22 +125,16 @@ export type Database = {
           address?: string | null
           collection_method?: string | null
           created_at?: string | null
-          customer_id?: number | null
+          customer_id?: string | null
           design_id?: string
           discount_code?: string | null
           order_id?: string
           proof_of_payment?: string | null
+          status?: boolean | null
           updated_at?: string | null
           whatsapp?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "orders_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "user"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "orders_design_id_fkey"
             columns: ["design_id"]
@@ -158,18 +147,15 @@ export type Database = {
       user: {
         Row: {
           email: string
-          id: number
-          name: string
+          id: string
         }
         Insert: {
           email: string
-          id?: number
-          name: string
+          id: string
         }
         Update: {
           email?: string
-          id?: number
-          name?: string
+          id?: string
         }
         Relationships: []
       }
@@ -219,11 +205,12 @@ export type Database = {
           address: string | null
           collection_method: string | null
           created_at: string | null
-          customer_id: number | null
+          customer_id: string | null
           design_id: string
           discount_code: string | null
           order_id: string
           proof_of_payment: string | null
+          status: boolean | null
           updated_at: string | null
           whatsapp: string | null
         }[]
@@ -243,11 +230,12 @@ export type Database = {
           address: string | null
           collection_method: string | null
           created_at: string | null
-          customer_id: number | null
+          customer_id: string | null
           design_id: string
           discount_code: string | null
           order_id: string
           proof_of_payment: string | null
+          status: boolean | null
           updated_at: string | null
           whatsapp: string | null
         }

@@ -2,7 +2,7 @@
 
 import { MantineProvider } from "@mantine/core";
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react'
+import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useSearchParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Tabs } from '@mantine/core';
@@ -24,20 +24,17 @@ interface Design {
 }
 
 export default function ProductList() {
-    const { data: session, status } = useSession();
+    const { session } = useSessionContext();
+    const user = session?.user;
     const supabase = createClientComponentClient();
     const [designs, setDesigns] = useState<Design[]>([]);
 
 
     useEffect(() => {
-        console.log("Session Status:", status);
-        console.log("Full Session Object:", session);
-        console.log("email (from session?.user?.email):", session?.user?.email);
-
-        if (session?.user?.email) {
-            getUserCases(session.user.email);
+        if (user?.email) {
+            getUserCases(user.email);
         }
-    }, [session, status]);
+    }, [user]);
 
     async function getUserCases(email: string) {
         let designIds: string[] = [];

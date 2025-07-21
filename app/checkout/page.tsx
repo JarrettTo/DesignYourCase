@@ -5,14 +5,14 @@ import { useSearchParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Image from 'next/image';
 import { IoCloudUploadOutline } from "react-icons/io5";
-import { useSession } from 'next-auth/react';
+import { useSessionContext } from '@supabase/auth-helpers-react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Design {
   id: string;
   user_id: string;
-  case_style: {
+  case_styles: {
     phone_model: string;
     phone_brand: string;
     material: string;
@@ -39,7 +39,7 @@ export default function CheckoutPage() {
   const [discountApplied, setDiscountApplied] = useState(false);
   const [receiptImage, setReceiptImage] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
-  const { data: session } = useSession();
+  const { session } = useSessionContext();
   const router = useRouter();
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
@@ -55,9 +55,9 @@ export default function CheckoutPage() {
     try {
       // Fetch designs with case style details using the database function
       const { data: designsData, error: designsError } = await supabase
-        .rpc('get_designs_with_details', {
-          design_ids: ids
-        });
+        .from('designs')
+        .select(`id, user_id, case_style_id, case_styles:case_style_id (phoneModel, phoneBrand, material, color, price, mockup)`)
+        .in('id', ids);
 
       if (designsError) {
         console.error('Error fetching designs:', designsError);
@@ -101,13 +101,13 @@ export default function CheckoutPage() {
             const designData: Design = {
               id: design.id,
               user_id: design.user_id,
-              case_style: {
-                phone_model: design.phone_model,
-                phone_brand: design.phone_brand,
-                material: design.material,
-                color: design.color,
-                price: design.price,
-                mockup: design.mockup
+              case_styles: {
+                phone_model: design.case_styles.phoneModel,
+                phone_brand: design.case_styles.phoneBrand,
+                material: design.case_styles.material,
+                color: design.case_styles.color,
+                price: design.case_styles.price,
+                mockup: design.case_styles.mockup
               },
               thumbnail_url: stageUrl,
               image_urls: imageUrls
@@ -119,7 +119,7 @@ export default function CheckoutPage() {
             const fallbackDesign: Design = {
               id: design.id,
               user_id: design.user_id,
-              case_style: {
+              case_styles: {
                 phone_model: design.phone_model,
                 phone_brand: design.phone_brand,
                 material: design.material,
@@ -143,7 +143,7 @@ export default function CheckoutPage() {
     }
   }
 
-  const total = designs.reduce((sum, design) => sum + design.case_style.price, 0);
+  const total = designs.reduce((sum, design) => sum + (Number(design.case_styles?.price) || 0), 0);
   const discountedTotal = discountApplied ? total * 0.8 : total;
 
   const handleApplyDiscount = () => {
@@ -170,16 +170,8 @@ export default function CheckoutPage() {
       return;
     }
     try {
-      // 1. Get user id (int) from user table by email
-      const { data: userData, error: userError } = await supabase
-        .from('user')
-        .select('id')
-        .eq('email', session.user.email)
-        .single();
-      if (userError || !userData) {
-        throw new Error('Could not find user record.');
-      }
-      const userId = userData.id;
+      // 1. Get user id from Supabase Auth session
+      const userId = session.user.id;
       // 2. Upload receipt image to payment-screenshots/{design_id}/<datetime>.ext (use first design for path)
       const designId = designs[0].id;
       const fileExt = receiptImage.name.split('.').pop();
@@ -230,7 +222,7 @@ export default function CheckoutPage() {
 
   if (orderSuccess) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen px-8">
         <div className="flex flex-col items-center bg-white p-8 rounded-lg shadow-md">
           <div className="mb-6">
             <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -270,20 +262,20 @@ export default function CheckoutPage() {
               <div key={design.id} className="flex gap-4 p-4 border rounded-lg">
                 <div className="relative w-24 h-24 flex-shrink-0">
                   <Image
-                    src={design.thumbnail_url || design.case_style.mockup}
-                    alt={design.case_style.phone_model}
+                    src={design.thumbnail_url || design.case_styles.mockup}
+                    alt={design.case_styles.phone_model}
                     fill
                     className="object-contain"
                   />
                 </div>
                 <div className="flex-grow">
                   <h3 className="font-medium text-lg">
-                    {design.case_style.material.charAt(0).toUpperCase() + design.case_style.material.slice(1)} Case
+                    {design.case_styles.material?.charAt(0).toUpperCase() + design.case_styles.material?.slice(1)} Case
                   </h3>
                   <div className="text-sm text-gray-600 space-y-1 mt-1">
-                    <p>Phone: {design.case_style.phone_brand.charAt(0).toUpperCase() + design.case_style.phone_brand.slice(1)} {design.case_style.phone_model.charAt(0).toUpperCase() + design.case_style.phone_model.slice(1)}</p>
-                    <p>Color: {design.case_style.color.charAt(0).toUpperCase() + design.case_style.color.slice(1)}</p>
-                    <p className="font-semibold text-base mt-2">${design.case_style.price}</p>
+                    <p>Phone: {design.case_styles.phone_brand?.charAt(0)?.toUpperCase() + design.case_styles.phone_brand?.slice(1)} {design.case_styles.phone_model?.charAt(0)?.toUpperCase() + design.case_styles.phone_model?.slice(1)}</p>
+                    <p>Color: {design.case_styles.color?.charAt(0).toUpperCase() + design.case_styles?.color?.slice(1)}</p>
+                    <p className="font-semibold text-base mt-2">${design.case_styles.price ? design.case_styles.price : '0.00'}</p>
                   </div>
                 </div>
               </div>

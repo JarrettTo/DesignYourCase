@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
-import AuthSessionProvider from "./auth/auth-session-provider";
 import LandingNavbar from "@/components/landing-navbar";
 import ClientLayout from "@/components/ClientLayout";
+import SupabaseProvider from '@/components/SupabaseProvider';
 
 const poppins = Poppins({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -19,11 +19,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      
       <body className={poppins.className}>
-        <AuthSessionProvider>
-         <ClientLayout>{children}</ClientLayout>
-        </AuthSessionProvider>
+        <SupabaseProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </SupabaseProvider>
       </body>
     </html>
   );

@@ -297,7 +297,7 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
     };
 
     return (
-        <div className="w-full h-full flex flex-col items-center justify-start bg-white">
+        <div className="w-full h-full flex flex-col items-center justify-start bg-white px-5">
             {error && (
                 <div className="text-red-500 mt-4">{error}</div>
             )}
@@ -305,10 +305,10 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
             {loading ? (
                 <div className="mt-4">Loading...</div>
             ) : (
-                <div className="flex flex-col items-center w-full max-w-[1200px] px-4">
+                <div className="flex flex-col items-center justify-center w-full max-w-[1200px] px-4">
                     {!selectedBrand && (
                         <>
-                            <p className="mt-20 font-Loubag text-[30px] text-[#A594F6]">Select Your Phone Brand</p>
+                            <p className="mt-20 font-Loubag text-[30px] text-[#A594F6] text-center">Select Your Phone Brand</p>
                             <div className="w-full flex justify-center mt-14">
                                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
                                     {brands.map((brand, index) => (
@@ -320,8 +320,8 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                     <Image
                                                 src={`/assets/images/${brand.originalName}.png`}
                                                 alt={brand.displayName}
-                                                w={200}
-                                        h={200}
+                                                w={150}
+                                        h={150}
                                                 fit="contain"
                                     />
                                         </div>
@@ -333,15 +333,8 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
 
                     {selectedBrand && !selectedModel && availableModels.length > 0 && (
                         <div className="flex flex-col items-center w-full mt-20">
-                            <div className="w-full flex justify-between items-center mb-14">
-                                <button 
-                                    onClick={() => setSelectedBrand('')}
-                                    className="text-[#A594F6] font-Poppins text-lg hover:opacity-80 transition-opacity"
-                                >
-                                    ← Back to Brands
-                                </button>
-                                <p className="font-Loubag text-[30px] text-[#A594F6]">Select a Phone Model</p>
-                                <div className="w-[100px]"></div> {/* Spacer for alignment */}
+                            <div className="w-full flex justify-center items-center">
+                                <p className="font-Loubag text-[30px] text-center mb-8 md:mb-8 text-[#A594F6]">Select a Phone Model</p>
                             </div>
                             <div className="w-full flex justify-center">
                                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
@@ -371,15 +364,8 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
 
                     {selectedModel && !selectedMaterial && availableMaterials.length > 0 && (
                         <div className="flex flex-col items-center w-full mt-20">
-                            <div className="w-full flex justify-between items-center mb-14">
-                                <button 
-                                    onClick={() => setSelectedModel('')}
-                                    className="text-[#A594F6] font-Poppins text-lg hover:opacity-80 transition-opacity"
-                                >
-                                    ← Back to Models
-                                </button>
-                                <p className="font-Loubag text-[30px] text-[#A594F6]">Select a Material</p>
-                                <div className="w-[100px]"></div> {/* Spacer for alignment */}
+                            <div className="w-full flex justify-center">
+                                <p className="font-Loubag text-[30px] text-center mb-8 md:mb-8 text-[#A594F6]">Select a Material</p>
                             </div>
                             <div className="w-full flex justify-center">
                                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
@@ -412,15 +398,8 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
 
                     {selectedMaterial && availableColors.length > 0 && (
                         <div className="flex flex-col items-center w-full mt-20">
-                            <div className="w-full flex justify-between items-center mb-14">
-                                <button 
-                                    onClick={() => setSelectedMaterial('')}
-                                    className="text-[#A594F6] font-Poppins text-lg hover:opacity-80 transition-opacity"
-                                >
-                                    ← Back to Materials
-                                </button>
-                                <p className="font-Loubag text-[30px] text-[#A594F6]">Select a Color</p>
-                                <div className="w-[100px]"></div> {/* Spacer for alignment */}
+                            <div className="w-full flex justify-center">
+                                <p className="font-Loubag text-[30px] text-center text-[#A594F6] mb-8">Select a Color</p>
                             </div>
                             <div className="w-full flex justify-center">
                                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
@@ -480,6 +459,22 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                     )}
                 </div>
             )}
-                    </div>
+            {selectedBrand && (
+                <button
+                    onClick={() => {
+                        if (selectedMaterial) {
+                            setSelectedMaterial('');
+                        } else if (selectedModel) {
+                            setSelectedModel('');
+                        } else {
+                            setSelectedBrand('');
+                        }
+                    }}
+                    className="fixed bottom-8 right-8 z-50 px-6 py-3 rounded-full bg-purple text-white text-lg font-bold shadow-lg hover:bg-gray-800 transition-all"
+                >
+                    {selectedMaterial ? '← Back to Materials' : selectedModel ? '← Back to Models' : '← Back to Brands'}
+                </button>
+            )}
+        </div>
     );
 }
