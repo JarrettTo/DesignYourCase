@@ -6,10 +6,11 @@ export default function SignIn() {
   const supabase = createClientComponentClient();
 
   const handleGoogleSignIn = async () => {
+    const redirectTo = process.env.NEXTAUTH_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        redirectTo,
       },
     });
     if (error) {
