@@ -147,11 +147,7 @@ function PhoneCaseEditor({
   const [selectedFont, setSelectedFont] = useState('Arial');
   const [fontSize, setFontSize] = useState(24);
   const [showTextControls, setShowTextControls] = useState(false);
-  const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const lastCenter = useRef<{ x: number; y: number } | null>(null);
-  const lastDist = useRef<number | null>(null);
+  const [showWrappedModal, setShowWrappedModal] = useState(false);
 
   const addTextElement = () => {
       const textId = `text-${uuidv4()}`;
@@ -187,12 +183,13 @@ function PhoneCaseEditor({
   const isPainting = useRef(false);
   const currentShapeId = useRef<string | undefined>();
   const isDraggable = action === ACTIONS.SELECT;
+  const isBackgroundDraggable = false;
 
   const phoneCaseClip = {
-      x: 0,
-      y: 0,
-      width: 300,
-      height: 600,
+      x: material === "wrapped" ? -8 : 0,
+      y: material === "wrapped" ? -8 : 0,
+      width: material === "wrapped" ? 316 : 300,
+      height: material === "wrapped" ? 616 : 600,
   };
 
   // Function to handle shape selection
@@ -331,20 +328,20 @@ function PhoneCaseEditor({
       // Force a redraw
       stage.batchDraw();
 
-      // Export the full stage as a JPG
-      console.log("Attempting to export stage as JPG...");
+      // Export the full stage as a PNG
+      console.log("Attempting to export stage as PNG...");
       const fullStageUri = stage.toDataURL({
-        mimeType: 'image/jpeg',
-        quality: 0.9,
-        pixelRatio: 2
+        mimeType: 'image/png',
+        quality: 1.0,
+        pixelRatio: 4
       });
       console.log("Stage exported to data URL:", fullStageUri.substring(0, 50) + "...");
       
       const fullStageBase64 = fullStageUri.split(',')[1];
       console.log("Base64 data length:", fullStageBase64.length);
       
-      zip.file("case_design.jpg", fullStageBase64, {base64: true});
-      console.log("Added case_design.jpg to zip");
+      zip.file("case_design.png", fullStageBase64, {base64: true});
+      console.log("Added case_design.png to zip");
 
       // Export individual images if they exist
       if (images.length > 0) {
@@ -358,7 +355,7 @@ function PhoneCaseEditor({
               const imageUri = image.toDataURL({
                 mimeType: 'image/png',
                 quality: 1,
-                pixelRatio: 2
+                pixelRatio: 4
               });
               const imageBase64 = imageUri.split(',')[1];
               imagesFolder.file(`image_${i + 1}.png`, imageBase64, {base64: true});
@@ -505,6 +502,13 @@ function PhoneCaseEditor({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedShape, selectedImageId, handleDelete]);
 
+  // Show wrapped modal on first load
+  useEffect(() => {
+    if (material === "wrapped") {
+      setShowWrappedModal(true);
+    }
+  }, [material]);
+
   const handleModelSelect = (model: any) => {
     setPhoneModel(model);
   };
@@ -578,7 +582,11 @@ function PhoneCaseEditor({
     }
 
     // Get design image as DataURL
-    const designImageDataURL = stage.toDataURL();
+    const designImageDataURL = stage.toDataURL({
+      mimeType: 'image/png',
+      quality: 1.0,
+      pixelRatio: 4
+    });
     
     // Prepare design data JSON
     const imagesWithBase64 = images.map(image => {
@@ -814,146 +822,52 @@ function PhoneCaseEditor({
     }
   };
 
-  const handleWheel = (e: Konva.KonvaEventObject<WheelEvent>) => {
-    e.evt.preventDefault();
 
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const oldScale = scale;
-    const pointer = stage.getPointerPosition();
-    if (!pointer) return;
-
-    const mousePointTo = {
-      x: (pointer.x - position.x) / oldScale,
-      y: (pointer.y - position.y) / oldScale,
-    };
-
-    // Calculate new scale
-    const newScale = e.evt.deltaY < 0 ? oldScale * 1.1 : oldScale / 1.1;
-    
-    // Limit scale between 0.5 and 3
-    const limitedScale = Math.max(0.5, Math.min(3, newScale));
-
-    setScale(limitedScale);
-    setPosition({
-      x: pointer.x - mousePointTo.x * limitedScale,
-      y: pointer.y - mousePointTo.y * limitedScale,
-    });
-  };
-
-  const handleTouchStart = (e: Konva.KonvaEventObject<TouchEvent>) => {
-    e.evt.preventDefault();
-    const touch1 = e.evt.touches[0];
-    const touch2 = e.evt.touches[1];
-
-    if (touch1 && touch2) {
-      // Calculate center point between two touches
-      const center = {
-        x: (touch1.clientX + touch2.clientX) / 2,
-        y: (touch1.clientY + touch2.clientY) / 2,
-      };
-      lastCenter.current = center;
-
-      // Calculate distance between touches
-      const dist = Math.sqrt(
-        Math.pow(touch2.clientX - touch1.clientX, 2) +
-        Math.pow(touch2.clientY - touch1.clientY, 2)
-      );
-      lastDist.current = dist;
-    } else if (touch1) {
-      // Single touch - start dragging
-      setIsDragging(true);
-      const stage = stageRef.current;
-      if (!stage) return;
-      const pointer = stage.getPointerPosition();
-      if (!pointer) return;
-      setPosition({
-        x: pointer.x - position.x,
-        y: pointer.y - position.y,
-      });
-    }
-  };
-
-  const handleTouchMove = (e: Konva.KonvaEventObject<TouchEvent>) => {
-    e.evt.preventDefault();
-    const touch1 = e.evt.touches[0];
-    const touch2 = e.evt.touches[1];
-
-    if (touch1 && touch2 && lastCenter.current && lastDist.current) {
-      // Calculate new center point
-      const center = {
-        x: (touch1.clientX + touch2.clientX) / 2,
-        y: (touch1.clientY + touch2.clientY) / 2,
-      };
-
-      // Calculate new distance
-      const dist = Math.sqrt(
-        Math.pow(touch2.clientX - touch1.clientX, 2) +
-        Math.pow(touch2.clientY - touch1.clientY, 2)
-      );
-
-      // Calculate scale change
-      const scaleChange = dist / lastDist.current;
-      const newScale = Math.max(0.5, Math.min(3, scale * scaleChange));
-
-      // Calculate position change
-      const dx = center.x - lastCenter.current.x;
-      const dy = center.y - lastCenter.current.y;
-
-      setScale(newScale);
-      setPosition({
-        x: position.x + dx,
-        y: position.y + dy,
-      });
-
-      lastCenter.current = center;
-      lastDist.current = dist;
-    } else if (touch1 && isDragging) {
-      // Single touch - continue dragging
-      const stage = stageRef.current;
-      if (!stage) return;
-      const pointer = stage.getPointerPosition();
-      if (!pointer) return;
-      setPosition({
-        x: pointer.x - position.x,
-        y: pointer.y - position.y,
-      });
-    }
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    lastCenter.current = null;
-    lastDist.current = null;
-  };
   
   return (
-    <div>
-      <div className="relative w-full h-screen overflow-hidden">
+            <div className='px-6'>
+        <div className="relative w-full h-screen overflow-hidden pt-20 sm:pt-4">
         {/* Action Buttons */}
-        <div className="absolute top-4 right-4 z-10 flex gap-3">
-          <button
-            className="px-4 py-2 rounded-lg flex items-center text-sm font-medium transition-all hover:opacity-90"
-            style={{
-              background: 'linear-gradient(to right, #F4D7EA, #D9FBFE)'
-            }}
-            onClick={handleAddToCart}
-            disabled={isLoading}
-          >
-            <FaShoppingCart size={"1.2rem"} />
-          </button>
-          <button
-            className="px-4 py-2 rounded-lg flex items-center text-sm font-medium transition-all hover:opacity-90"
-            style={{
-              background: 'linear-gradient(to right, #F4D7EA, #D9FBFE)'
-            }}
-            onClick={handleCheckout}
-            disabled={isLoading}
-          >
-            <MdShoppingCartCheckout size={"1.2rem"} className="mr-2" />
-            {isLoading ? "Processing..." : "Checkout"}
-          </button>
+        <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center">
+          {/* Case Information */}
+          <div className="flex flex-col gap-1 text-sm font-medium">
+            <span className="capitalize">{phoneBrand}</span>
+            <span className="capitalize">{phoneModel} {material}</span>
+            {color && color.trim() !== "" && (
+              <div className="flex items-center gap-2">
+                <span className="capitalize">{color}</span>
+                <div 
+                  className="w-4 h-4 rounded-full border border-gray-300"
+                  style={{ backgroundColor: color }}
+                ></div>
+              </div>
+            )}
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              className="px-4 py-2 rounded-lg flex items-center justify-center text-sm font-medium transition-all hover:opacity-90 order-2 sm:order-1"
+              style={{
+                background: 'linear-gradient(to right, #F4D7EA, #D9FBFE)'
+              }}
+              onClick={handleAddToCart}
+              disabled={isLoading}
+            >
+              <FaShoppingCart size={"1.2rem"} />
+            </button>
+            <button
+              className="px-4 py-2 rounded-lg flex items-center justify-center text-sm font-medium transition-all hover:opacity-90 order-1 sm:order-2"
+              style={{
+                background: 'linear-gradient(to right, #F4D7EA, #D9FBFE)'
+              }}
+              onClick={handleCheckout}
+              disabled={isLoading}
+            >
+              <MdShoppingCartCheckout size={"1.2rem"} className="mr-2" />
+              {isLoading ? "Processing..." : "Checkout"}
+            </button>
+          </div>
         </div>
 
         <div className='flex justify-center items-center w-full h-full'>
@@ -965,15 +879,8 @@ function PhoneCaseEditor({
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onClick={onClick}
-            onWheel={handleWheel}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            draggable={action === ACTIONS.SELECT}
-            scaleX={scale}
-            scaleY={scale}
-            x={position.x}
-            y={position.y}
+
+            draggable={false}
           >
             {/* Background Layer */}
             <Layer ref={backgroundLayerRef}>
@@ -984,6 +891,7 @@ function PhoneCaseEditor({
                   width={phoneCaseClip.width}
                   height={phoneCaseClip.height}
                   listening={false}
+                  draggable={false}
                 />
               )}
               {type === 'Colored' && (
@@ -994,15 +902,34 @@ function PhoneCaseEditor({
                   width={phoneCaseClip.width}
                   height={phoneCaseClip.height}
                   fill={color}
+                  listening={false}
+                  draggable={false}
                 />
               )}
               <KonvaImage
                 id="bg"
                 image={caseImage}
-                width={phoneCaseClip.width}
-                height={phoneCaseClip.height}
-                listening={action === ACTIONS.SELECT}
+                width={material === "wrapped" ? 300 : phoneCaseClip.width}
+                height={material === "wrapped" ? 600 : phoneCaseClip.height}
+                x={material === "wrapped" ? (phoneCaseClip.width - 300) / 2 : 0}
+                y={material === "wrapped" ? (phoneCaseClip.height - 600) / 2 : 0}
+                listening={false}
+                draggable={false}
               />
+              {material === "wrapped" && (
+                <Rect
+                  id="wrapped-outline"
+                  x={0}
+                  y={0}
+                  width={phoneCaseClip.width}
+                  height={phoneCaseClip.height}
+                  stroke="black"
+                  strokeWidth={2}
+                  fill="transparent"
+                  listening={false}
+                  draggable={false}
+                />
+              )}
             </Layer>
             
             {/* Editing Layer */}
@@ -1079,7 +1006,7 @@ function PhoneCaseEditor({
         </div>
 
         {/* Bottom Toolbar */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 pb-4">
+        <div className="fixed bottom-4 left-0 right-0 z-10 px-4">
           <div className="flex flex-col gap-2">
             {/* Text Controls */}
             {showTextControls && (
@@ -1157,6 +1084,27 @@ function PhoneCaseEditor({
           </div>
         </div>
       </div>
+
+      {/* Wrapped Case Modal */}
+      {showWrappedModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Design Guidelines</h3>
+            <p className="text-gray-700 mb-6">
+              For wrapped cases, please ensure to fill the case with design until the black outline.
+            </p>
+            <button
+              className="px-4 py-2 rounded-lg flex items-center justify-center text-sm font-medium transition-all hover:opacity-90 w-full"
+              style={{
+                background: 'linear-gradient(to right, #F4D7EA, #D9FBFE)'
+              }}
+              onClick={() => setShowWrappedModal(false)}
+            >
+              I Understand
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

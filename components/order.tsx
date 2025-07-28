@@ -4,7 +4,7 @@ export default function Order(){
     return(
         <div className="mt-10 bg-lightPurple flex justify-center md:py-10">
             <div className="flex flex-row p-3 justify-center items-center gap-2 md:gap-20 md:px-40">
-                <div className="flex flex-col bg-white rounded-xl items-center px-3 py-3 gap-2 md:py-10 md:gap-7 md:min-h-[25em]">
+                <div className="flex flex-col bg-white rounded-3xl items-center px-3 py-3 gap-2 md:py-10 md:gap-7 md:min-h-[25em]">
                     <Image 
                     src="/assets/images/payment.png" 
                     alt="alt" 
@@ -21,7 +21,7 @@ export default function Order(){
                     
                 </div>
 
-                <div className="flex flex-col bg-white rounded-xl items-center px-3 py-3 gap-2 md:py-10 md:gap-7 md:min-h-[25em]">
+                <div className="flex flex-col bg-white rounded-3xl items-center px-3 py-3 gap-2 md:py-10 md:gap-7 md:min-h-[25em]">
                     <Image 
                         src="/assets/images/eta.png" 
                         alt="alt" 
@@ -38,7 +38,7 @@ export default function Order(){
                     
                 </div>
 
-                <div className="flex flex-col bg-white rounded-xl items-center px-3 py-3 gap-2 md:py-10 md:gap-7 md:min-h-[25em]">
+                <div className="flex flex-col bg-white rounded-3xl items-center px-3 py-3 gap-2 md:py-10 md:gap-7 md:min-h-[25em]">
                     <Image 
                         src="/assets/images/collection.png" 
                         alt="alt" 

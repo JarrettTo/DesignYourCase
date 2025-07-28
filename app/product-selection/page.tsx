@@ -92,7 +92,7 @@ function ProductSelectInner() {
   return (
     <MantineProvider theme={theme}>
       <main className="flex flex-col w-full overflow-x-hidden">
-        {selectedOptions.phoneModel && selectedOptions.material && selectedOptions.color ? (
+        {selectedOptions.phoneModel && selectedOptions.material ? (
           <PhoneCaseEditor
             id={selectedOptions.id}
             phoneModel={selectedOptions.phoneModel}
