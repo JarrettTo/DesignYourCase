@@ -581,8 +581,33 @@ function PhoneCaseEditor({
       return null;
     }
 
-    // Get design image as DataURL
+    // Hide background layer to get design only
+    const backgroundLayer = backgroundLayerRef.current;
+    const wasBackgroundVisible = backgroundLayer?.visible();
+    if (backgroundLayer) {
+      backgroundLayer.visible(false);
+    }
+    
+    // Force a redraw
+    stage.batchDraw();
+
+    // Get design image without case layer as DataURL
     const designImageDataURL = stage.toDataURL({
+      mimeType: 'image/png',
+      quality: 1.0,
+      pixelRatio: 4
+    });
+    
+    // Restore background layer visibility
+    if (backgroundLayer && wasBackgroundVisible !== undefined) {
+      backgroundLayer.visible(wasBackgroundVisible);
+    }
+    
+    // Force another redraw
+    stage.batchDraw();
+
+    // Get stage image with case layer as DataURL
+    const stageImageDataURL = stage.toDataURL({
       mimeType: 'image/png',
       quality: 1.0,
       pixelRatio: 4
@@ -606,7 +631,8 @@ function PhoneCaseEditor({
   
     return {
       designJSON: JSON.stringify(designData),
-      designImage: designImageDataURL
+      designImage: designImageDataURL,
+      stageImage: stageImageDataURL
     };
   }
 
@@ -661,8 +687,18 @@ function PhoneCaseEditor({
       }
       stageRef.current?.batchDraw();
 
-      // Upload the stage image
-      const stageImageFile = await fetch(designData.designImage).then((res) => res.blob());
+      // Upload the design image (without case layer)
+      const designImageFile = await fetch(designData.designImage).then((res) => res.blob());
+      const designImagePath = `design-images/${userId}/${designId}/design.png`;
+      const { error: designUploadError } = await supabase.storage
+        .from('phone-case-designs')
+        .upload(designImagePath, designImageFile);
+      if (designUploadError) {
+        throw new Error("Failed to upload design image: " + designUploadError.message);
+      }
+
+      // Upload the stage image (with case layer)
+      const stageImageFile = await fetch(designData.stageImage).then((res) => res.blob());
       const stageImagePath = `design-images/${userId}/${designId}/stage.png`;
       const { error: stageUploadError } = await supabase.storage
         .from('phone-case-designs')
@@ -670,15 +706,16 @@ function PhoneCaseEditor({
       if (stageUploadError) {
         throw new Error("Failed to upload stage image: " + stageUploadError.message);
       }
-      // Get public URL for uploaded stage image
+
+      // Get public URL for uploaded design image (use this as the main image_url)
       const { data: publicUrlData } = supabase.storage
         .from('phone-case-designs')
-        .getPublicUrl(stageImagePath);
-      const stageImageUrl = publicUrlData?.publicUrl;
+        .getPublicUrl(designImagePath);
+      const designImageUrl = publicUrlData?.publicUrl;
       // Update the design record with image_url
       await supabase
         .from('designs')
-        .update({ image_url: stageImageUrl })
+        .update({ image_url: designImageUrl })
         .eq('id', designId);
 
       // Upload individual images
@@ -759,8 +796,18 @@ function PhoneCaseEditor({
       }
       stageRef.current?.batchDraw();
 
-      // Upload the stage image
-      const stageImageFile = await fetch(designData.designImage).then((res) => res.blob());
+      // Upload the design image (without case layer)
+      const designImageFile = await fetch(designData.designImage).then((res) => res.blob());
+      const designImagePath = `design-images/${userId}/${designId}/design.png`;
+      const { error: designUploadError } = await supabase.storage
+        .from('phone-case-designs')
+        .upload(designImagePath, designImageFile);
+      if (designUploadError) {
+        throw new Error("Failed to upload design image: " + designUploadError.message);
+      }
+
+      // Upload the stage image (with case layer)
+      const stageImageFile = await fetch(designData.stageImage).then((res) => res.blob());
       const stageImagePath = `design-images/${userId}/${designId}/stage.png`;
       const { error: stageUploadError } = await supabase.storage
         .from('phone-case-designs')
@@ -768,15 +815,16 @@ function PhoneCaseEditor({
       if (stageUploadError) {
         throw new Error("Failed to upload stage image: " + stageUploadError.message);
       }
-      // Get public URL for uploaded stage image
+
+      // Get public URL for uploaded design image (use this as the main image_url)
       const { data: publicUrlData } = supabase.storage
         .from('phone-case-designs')
-        .getPublicUrl(stageImagePath);
-      const stageImageUrl = publicUrlData?.publicUrl;
+        .getPublicUrl(designImagePath);
+      const designImageUrl = publicUrlData?.publicUrl;
       // Update the design record with image_url
       await supabase
         .from('designs')
-        .update({ image_url: stageImageUrl })
+        .update({ image_url: designImageUrl })
         .eq('id', designId);
 
       // Upload individual images

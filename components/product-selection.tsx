@@ -392,6 +392,7 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                             w={150}
                                             h={150}
                                             fit="contain"
+                                            radius="md"
                                         />
                                     </div>
                                         </div>
@@ -444,15 +445,16 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                             }}
                                             className="cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-start"
                                         >
-                                            <div className="rounded-3xl overflow-hidden">
-                                                <Image
-                                                    src={material.thumbnail}
-                                                    alt={material.material}
-                                                    w={200}
-                                                    h={200}
-                                                    fit="contain"
-                                                />
-                                            </div>
+                                            <Image
+                                                src={material.thumbnail}
+                                                alt={material.material}
+                                                w={200}
+                                                h={200}
+                                                fit="contain"
+                                                radius="xl"
+                                                className="rounded-3xl"
+                                                style={{ borderRadius: '24px !important' }}
+                                            />
                                             <div className="flex items-center justify-between mt-4 w-full">
                                                 <p className="text-start font-Poppins text-lg">{material.material}</p>
                                                 <Tooltip
@@ -537,15 +539,16 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                             }}
                                             className="cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-start"
                                         >
-                                            <div className="rounded-3xl overflow-hidden">
-                                                <Image
-                                                    src={color.thumbnail}
-                                                    alt={color.color}
-                                                    w={200}
-                                                    h={200}
-                                                    fit="contain"
-                                                />
-                                            </div>
+                                            <Image
+                                                src={color.thumbnail}
+                                                alt={color.color}
+                                                w={200}
+                                                h={200}
+                                                fit="contain"
+                                                radius="xl"
+                                                className="rounded-3xl"
+                                                style={{ borderRadius: '24px !important' }}
+                                            />
                                             <p className="text-start font-Poppins text-lg mt-4">{color.color}</p>
                                             <p className="text-start font-Poppins text-lg font-bold text-[#A594F6]">
                                                 {formatPrice(color.price)}
