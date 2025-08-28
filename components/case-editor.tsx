@@ -207,21 +207,51 @@ function PhoneCaseEditor({
   const isDraggable = action === ACTIONS.SELECT;
   const isBackgroundDraggable = false;
 
-  // Calculate responsive scaling for wrapped materials
+  // Calculate responsive scaling for all materials
   const getResponsiveScale = () => {
-    if (material !== "wrapped" || !windowDimensions.width) return 1.5;
+    if (!windowDimensions.width) return 1.5;
     
     const baseWidth = 300;
     const baseHeight = 600;
-    const availableWidth = windowDimensions.width * 0.8; // 80% of screen width
-    const availableHeight = windowDimensions.height * 0.6; // 60% of screen height
+    
+    // Adjust available space based on screen size
+    let availableWidthPercent = 0.8; // Default 80%
+    let availableHeightPercent = 0.6; // Default 60%
+    
+    // For very small screens (< 480px), use more aggressive scaling
+    if (windowDimensions.width < 480) {
+      availableWidthPercent = 0.9; // Use 90% of width
+      availableHeightPercent = 0.7; // Use 70% of height
+    }
+    // For small screens (< 640px), use moderate scaling
+    else if (windowDimensions.width < 640) {
+      availableWidthPercent = 0.85; // Use 85% of width
+      availableHeightPercent = 0.65; // Use 65% of height
+    }
+    
+    const availableWidth = windowDimensions.width * availableWidthPercent;
+    const availableHeight = windowDimensions.height * availableHeightPercent;
     
     const scaleX = availableWidth / baseWidth;
     const scaleY = availableHeight / baseHeight;
     
     // Use the smaller scale to ensure it fits both dimensions
-    const responsiveScale = Math.min(scaleX, scaleY, 1.8); // Max scale of 1.8
-    return Math.max(responsiveScale, 1.2); // Min scale of 1.2
+    let maxScale = 1.8; // Default max scale
+    let minScale = 1.2; // Default min scale
+    
+    // For very small screens, allow much smaller scaling
+    if (windowDimensions.width < 480) {
+      maxScale = 1.6;
+      minScale = 1; // Allow much smaller scale
+    }
+    // For small screens, allow smaller scaling
+    else if (windowDimensions.width < 640) {
+      maxScale = 1.6;
+      minScale = 0.8;
+    }
+    
+    const responsiveScale = Math.min(scaleX, scaleY, maxScale);
+    return Math.max(responsiveScale, minScale);
   };
 
   const responsiveScale = getResponsiveScale();
@@ -997,7 +1027,7 @@ function PhoneCaseEditor({
       <div className='px-6 pb-20'>
         <div className="relative w-full h-screen overflow-hidden pt-20 sm:pt-4 pb-20">
         {/* Action Buttons */}
-        <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center ">
+        <div className="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 z-10 flex justify-between items-center">
           {/* Case Information */}
           <div className="flex flex-col gap-1 text-sm font-medium">
             <span className="capitalize">{phoneBrand}</span>
@@ -1039,14 +1069,14 @@ function PhoneCaseEditor({
           </div>
         </div>
 
-        <div className='grid mt-10 place-items-center w-full h-full pb-20'>
+        <div className='grid mt-4 sm:mt-10 place-items-center w-full h-full pb-12 sm:pb-20'>
           <Stage
             width={phoneCaseClip.width}
             height={phoneCaseClip.height}
-            scaleX={0.9}
-            scaleY={0.9}
-            x={phoneCaseClip.width * 0.05}
-            y={phoneCaseClip.height * 0.05}
+            scaleX={windowDimensions.width < 480 ? 0.75 : windowDimensions.width < 640 ? 0.8 : 0.9}
+            scaleY={windowDimensions.width < 480 ? 0.75 : windowDimensions.width < 640 ? 0.8 : 0.9}
+            x={phoneCaseClip.width * (windowDimensions.width < 480 ? 0.1 : windowDimensions.width < 640 ? 0.1 : 0.05)}
+            y={phoneCaseClip.height * (windowDimensions.width < 480 ? 0.1 : windowDimensions.width < 640 ? 0.1 : 0.05)}
             ref={stageRef}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}

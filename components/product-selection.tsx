@@ -550,14 +550,22 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                             }}
                                             className="cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-start"
                                         >
-                                            <OptimizedImage
-                                                src={material.thumbnail}
-                                                alt={material.material}
-                                                width={300}
-                                                height={300}
-                                                className="w-full aspect-square rounded-xl"
-                                                priority={index < 4} // Prioritize first 4 images
-                                            />
+                                            <div 
+                                                className="cursor-pointer"
+                                                onClick={() => {
+                                                    setSelectedMaterial(material.material);
+                                                    form.setFieldValue('material', material.material);
+                                                }}
+                                            >
+                                                <OptimizedImage
+                                                    src={material.thumbnail}
+                                                    alt={material.material}
+                                                    width={300}
+                                                    height={300}
+                                                    className="w-full aspect-square rounded-xl cursor-pointer"
+                                                    priority={index < 4} // Prioritize first 4 images
+                                                />
+                                            </div>
                                             <div className="flex items-center justify-between mt-4 w-full">
                                                 <p className="text-start font-Poppins text-lg">{material.material}</p>
                                                 <Tooltip
@@ -650,14 +658,50 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                             }}
                                             className="cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-center"
                                         >
-                                            <OptimizedImage
-                                                src={color.thumbnail}
-                                                alt={color.color}
-                                                width={200}
-                                                height={200}
-                                                className="w-full aspect-square rounded-xl"
-                                                priority={index < 6} // Prioritize first 6 color images
-                                            />
+                                            <div 
+                                                className="cursor-pointer"
+                                                onClick={() => {
+                                                    form.setFieldValue('color', color.color);
+                                                    // Find the selected design
+                                                    const selectedDesign = designs?.find(design => 
+                                                        design.phoneModel?.toLowerCase() === selectedModel.toLowerCase() &&
+                                                        design.material?.toLowerCase() === selectedMaterial.toLowerCase() &&
+                                                        design.color?.toLowerCase() === color.color.toLowerCase()
+                                                    );
+
+                                                    if (selectedDesign && onSubmit) {
+                                                        const queryParams = new URLSearchParams({
+                                                            phoneModel: selectedDesign.phoneModel || '',
+                                                            material: selectedDesign.material || '',
+                                                            color: selectedDesign.color || '',
+                                                        });
+                                                        router.push(`/product-selection?${queryParams.toString()}`);
+                                                        
+                                                        onSubmit({
+                                                            id: selectedDesign.id,
+                                                            phoneModel: selectedDesign.phoneModel || '',
+                                                            phoneBrand: selectedDesign.phoneBrand || '',
+                                                            thumbnail: selectedDesign.thumbnail || '',
+                                                            color: selectedDesign.color || '',
+                                                            material: selectedDesign.material || '',
+                                                            seller: selectedDesign.seller,
+                                                            type: selectedDesign.type || 'Transparent',
+                                                            variation: selectedDesign.variation || '',
+                                                            price: selectedDesign.price,
+                                                            mockup: selectedDesign.mockup
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                <OptimizedImage
+                                                    src={color.thumbnail}
+                                                    alt={color.color}
+                                                    width={200}
+                                                    height={200}
+                                                    className="w-full aspect-square rounded-xl cursor-pointer"
+                                                    priority={index < 6} // Prioritize first 6 color images
+                                                />
+                                            </div>
                                             <p className="text-center font-Poppins text-lg mt-3">{color.color}</p>
                                            
                                         </div>
