@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useSessionContext } from "@supabase/auth-helpers-react";
 import { useRouter } from "next/navigation";
+import { FaHome } from "react-icons/fa";
 
 const supabase = createClientComponentClient();
 
@@ -116,7 +117,7 @@ export default function CartPage() {
       ) : (
         <>
           {activeTab === "Designs" && (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-40">
               {designs.filter((design) => !design.orders || design.orders.length === 0).length === 0 ? (
                 <div className="text-gray-500">No designs found.</div>
               ) : (
@@ -152,6 +153,19 @@ export default function CartPage() {
                     </div>
                   ))
               )}
+              {/* Home button - lower left */}
+              <div className="fixed bottom-8 left-8 z-50">
+                  <button
+                      className="w-16 h-16 rounded-full text-white shadow-lg transition-all hover:scale-110"
+                      style={{
+                          background: 'linear-gradient(135deg, #ff96d6 0%, #4cf3fe 100%)'
+                      }}
+                      onClick={() => router.push('/product-selection')}
+                  >
+                      <FaHome size={24} className="mx-auto" />
+                  </button>
+              </div>
+
               {/* Floating action buttons */}
               <div className="fixed bottom-8 right-8 z-50 flex flex-col md:flex-row gap-4">
                   <button
@@ -172,7 +186,7 @@ export default function CartPage() {
             </div>
           )}
           {activeTab === "Orders" && (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-40">
               {orders.length === 0 ? (
                 <div className="text-gray-500">No orders found.</div>
               ) : (
@@ -203,12 +217,12 @@ export default function CartPage() {
                       className="flex items-center justify-between bg-white rounded-lg shadow p-4"
                     >
                       <div>
-                        <div className="font-semibold">Order #{order.order_id}</div>
+                        <div className="font-semibold">Order #{order.order_id?.slice(0, 8)}</div>
                         <div className="text-sm text-gray-500">
                           Placed: {order.created_at?.slice(0, 10)}
                         </div>
                         <div className="text-sm text-gray-500">
-                          Design ID: {order.design_id}
+                          Design ID: {order.design_id?.slice(0, 8)}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">

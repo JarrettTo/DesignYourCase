@@ -33,7 +33,7 @@ export default function Order(){
                         ETA
                     </p>
                     <p className="text-center text-[9px] md:text-2xl">
-                        Your case will arrive in 2-3 weeks<br /> after payment is confirmed!
+                        Your case will be ready in 2-3 weeks<br /> after payment is confirmed!
                     </p>
                     
                 </div>
@@ -50,7 +50,8 @@ export default function Order(){
                         Collection
                     </p>
                     <p className="text-center text-[9px] md:text-2xl">
-                        $5 Delivery fee to all Brunei areas<br /> or Pick-Up at Kg Jangsak
+                        $5 Delivery fee to all Brunei areas<br /> or Pick-Up at Gadong
+                        Central
                     </p>
                     
                 </div>

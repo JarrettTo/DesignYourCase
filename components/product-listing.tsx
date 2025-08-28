@@ -90,7 +90,7 @@ export default function ProductListing() {
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-start bg-white">
-            <p className="mt-20 font-Loubag text-[30px] text-[#A594F6]">Select Your Phone Brand</p>
+            <p className="mt-20 font-Poppins text-sm md:text-[30px] text-[#A594F6]">Select Your Phone Brand</p>
             
             {error && (
                 <div className="text-red-500 mt-4">{error}</div>

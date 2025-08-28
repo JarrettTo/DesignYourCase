@@ -148,6 +148,28 @@ function PhoneCaseEditor({
   const [fontSize, setFontSize] = useState(24);
   const [showTextControls, setShowTextControls] = useState(false);
   const [showWrappedModal, setShowWrappedModal] = useState(false);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  const [editingTextValue, setEditingTextValue] = useState('');
+  const [lastTapTime, setLastTapTime] = useState(0);
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const [selectionStart, setSelectionStart] = useState(0);
+  const [selectionEnd, setSelectionEnd] = useState(0);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
+
+  // Track window dimensions for responsive scaling
+  useEffect(() => {
+    const updateWindowDimensions = () => {
+      setWindowDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+
+    updateWindowDimensions();
+    window.addEventListener('resize', updateWindowDimensions);
+    return () => window.removeEventListener('resize', updateWindowDimensions);
+  }, []);
 
   const addTextElement = () => {
       const textId = `text-${uuidv4()}`;
@@ -185,11 +207,30 @@ function PhoneCaseEditor({
   const isDraggable = action === ACTIONS.SELECT;
   const isBackgroundDraggable = false;
 
+  // Calculate responsive scaling for wrapped materials
+  const getResponsiveScale = () => {
+    if (material !== "wrapped" || !windowDimensions.width) return 1.5;
+    
+    const baseWidth = 300;
+    const baseHeight = 600;
+    const availableWidth = windowDimensions.width * 0.8; // 80% of screen width
+    const availableHeight = windowDimensions.height * 0.6; // 60% of screen height
+    
+    const scaleX = availableWidth / baseWidth;
+    const scaleY = availableHeight / baseHeight;
+    
+    // Use the smaller scale to ensure it fits both dimensions
+    const responsiveScale = Math.min(scaleX, scaleY, 1.8); // Max scale of 1.8
+    return Math.max(responsiveScale, 1.2); // Min scale of 1.2
+  };
+
+  const responsiveScale = getResponsiveScale();
+
   const phoneCaseClip = {
-      x: material === "wrapped" ? -8 : 0,
-      y: material === "wrapped" ? -8 : 0,
-      width: material === "wrapped" ? 316 : 300,
-      height: material === "wrapped" ? 616 : 600,
+      x: material === "wrapped" ? -(300 * (responsiveScale - 1) / 2) : 0,
+      y: material === "wrapped" ? -(600 * (responsiveScale - 1) / 2) : 0,
+      width: material === "wrapped" ? 300 * responsiveScale : 300,
+      height: material === "wrapped" ? 600 * responsiveScale : 600,
   };
 
   // Function to handle shape selection
@@ -870,13 +911,93 @@ function PhoneCaseEditor({
     }
   };
 
+  // Function to start inline text editing
+  const startTextEditing = (textId: string, currentText: string) => {
+    setEditingTextId(textId);
+    setEditingTextValue(currentText);
+    setCursorPosition(currentText.length);
+    setSelectionStart(0);
+    setSelectionEnd(currentText.length);
+    
+    // Focus the hidden input after a short delay
+    setTimeout(() => {
+      if (hiddenInputRef.current) {
+        hiddenInputRef.current.focus();
+        hiddenInputRef.current.select();
+      }
+    }, 10);
+  };
+
+  // Function to finish inline text editing
+  const finishTextEditing = () => {
+    setEditingTextId(null);
+    setEditingTextValue('');
+  };
+
+  // Function to handle text input changes
+  const handleTextInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setEditingTextValue(newValue);
+    
+    // Update cursor and selection position
+    setCursorPosition(e.target.selectionStart || 0);
+    setSelectionStart(e.target.selectionStart || 0);
+    setSelectionEnd(e.target.selectionEnd || 0);
+    
+    // Update the text element in real-time
+    if (editingTextId) {
+      updateTextElement(editingTextId, { text: newValue });
+    }
+  };
+
+  // Function to handle text input key press
+  const handleTextInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      finishTextEditing();
+    } else if (e.key === 'Escape') {
+      setEditingTextId(null);
+      setEditingTextValue('');
+    }
+  };
+
+  // Function to handle cursor and selection updates
+  const handleTextInputSelect = (e: React.SyntheticEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    setCursorPosition(target.selectionStart || 0);
+    setSelectionStart(target.selectionStart || 0);
+    setSelectionEnd(target.selectionEnd || 0);
+  };
+
+  // Function to handle mobile double tap
+  const handleTextTap = (textId: string, currentText: string) => {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapTime;
+    
+    if (tapLength < 500 && tapLength > 0) {
+      // Double tap detected
+      startTextEditing(textId, currentText);
+    } else if (tapLength > 500) {
+      // Single tap - just select the text
+      handleShapeClick({ target: { id: () => textId } });
+    }
+    setLastTapTime(currentTime);
+  };
+
 
   
   return (
-            <div className='px-6'>
-        <div className="relative w-full h-screen overflow-hidden pt-20 sm:pt-4">
+    <>
+      <style jsx>{`
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
+        }
+      `}</style>
+      <div className='px-6 pb-20'>
+        <div className="relative w-full h-screen overflow-hidden pt-20 sm:pt-4 pb-20">
         {/* Action Buttons */}
-        <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center">
+        <div className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center ">
           {/* Case Information */}
           <div className="flex flex-col gap-1 text-sm font-medium">
             <span className="capitalize">{phoneBrand}</span>
@@ -902,7 +1023,7 @@ function PhoneCaseEditor({
               onClick={handleAddToCart}
               disabled={isLoading}
             >
-              <FaShoppingCart size={"1.2rem"} />
+              Add to Cart
             </button>
             <button
               className="px-4 py-2 rounded-lg flex items-center justify-center text-sm font-medium transition-all hover:opacity-90 order-1 sm:order-2"
@@ -918,16 +1039,19 @@ function PhoneCaseEditor({
           </div>
         </div>
 
-        <div className='flex justify-center items-center w-full h-full'>
+        <div className='grid mt-10 place-items-center w-full h-full pb-20'>
           <Stage
             width={phoneCaseClip.width}
             height={phoneCaseClip.height}
+            scaleX={0.9}
+            scaleY={0.9}
+            x={phoneCaseClip.width * 0.05}
+            y={phoneCaseClip.height * 0.05}
             ref={stageRef}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onClick={onClick}
-
             draggable={false}
           >
             {/* Background Layer */}
@@ -936,8 +1060,10 @@ function PhoneCaseEditor({
                 <KonvaImage
                   id="mockup"
                   image={mockupImage}
-                  width={phoneCaseClip.width}
-                  height={phoneCaseClip.height}
+                  width={material === "wrapped" ? (phoneCaseClip.width * 0.8) : phoneCaseClip.width}
+                  height={material === "wrapped" ? (phoneCaseClip.height * 0.8) : phoneCaseClip.height}
+                  x={material === "wrapped" ? (phoneCaseClip.width - phoneCaseClip.width * 0.8) / 2 : 0}
+                  y={material === "wrapped" ? (phoneCaseClip.height - phoneCaseClip.height * 0.8) / 2 : 0}
                   listening={false}
                   draggable={false}
                 />
@@ -957,22 +1083,22 @@ function PhoneCaseEditor({
               <KonvaImage
                 id="bg"
                 image={caseImage}
-                width={material === "wrapped" ? 300 : phoneCaseClip.width}
-                height={material === "wrapped" ? 600 : phoneCaseClip.height}
+                width={300}
+                height={600}
                 x={material === "wrapped" ? (phoneCaseClip.width - 300) / 2 : 0}
                 y={material === "wrapped" ? (phoneCaseClip.height - 600) / 2 : 0}
                 listening={false}
                 draggable={false}
               />
-              {material === "wrapped" && (
+                            {material === "wrapped" && (
                 <Rect
                   id="wrapped-outline"
-                  x={0}
-                  y={0}
-                  width={phoneCaseClip.width}
-                  height={phoneCaseClip.height}
+                  x={(phoneCaseClip.width - phoneCaseClip.width * 0.95) / 2}
+                  y={(phoneCaseClip.height - phoneCaseClip.height * 0.95) / 2}
+                  width={phoneCaseClip.width * 0.95}
+                  height={phoneCaseClip.height * 0.95}
                   stroke="black"
-                  strokeWidth={2}
+                  strokeWidth={4}
                   fill="transparent"
                   listening={false}
                   draggable={false}
@@ -1022,12 +1148,19 @@ function PhoneCaseEditor({
                   onDragEnd={(e) => {
                     updateTextElement(text.id, { x: e.target.x(), y: e.target.y() });
                   }}
-                  onClick={handleShapeClick}
+                  onClick={(e) => {
+                    // Handle both click and tap
+                    handleShapeClick(e);
+                    handleTextTap(text.id, text.text);
+                  }}
                   onDblClick={() => {
-                    const newText = prompt('Enter new text:', text.text);
-                    if (newText !== null) {
-                      updateTextElement(text.id, { text: newText });
-                    }
+                    startTextEditing(text.id, text.text);
+                  }}
+                  onTouchStart={(e) => {
+                    // Handle touch events for mobile
+                    e.evt.preventDefault();
+                    // On mobile, start editing immediately on touch
+                    startTextEditing(text.id, text.text);
                   }}
                 />
               ))}
@@ -1048,10 +1181,95 @@ function PhoneCaseEditor({
                   }
                   return newBox;
                 }}
-              />
+                            />
             </Layer>
           </Stage>
+          </div>
         </div>
+
+
+
+        {/* Hidden Text Input for Real-time Editing */}
+        {editingTextId && (
+          <input
+            ref={hiddenInputRef}
+            type="text"
+            value={editingTextValue}
+            onChange={handleTextInputChange}
+            onKeyDown={handleTextInputKeyPress}
+            onSelect={handleTextInputSelect}
+            onBlur={finishTextEditing}
+            autoFocus
+            className="fixed top-0 left-0 w-0 h-0 opacity-0 pointer-events-none"
+          />
+        )}
+
+        {/* Visual Cursor and Selection Indicators */}
+        {editingTextId && (
+          <div className="fixed inset-0 z-50 pointer-events-none">
+            {textElements.map(text => {
+              if (text.id === editingTextId) {
+                const stage = stageRef.current;
+                if (stage) {
+                  const stageRect = stage.container().getBoundingClientRect();
+                  const scale = stage.scaleX();
+                  
+                  // Calculate text metrics
+                  const canvas = document.createElement('canvas');
+                  const ctx = canvas.getContext('2d');
+                  if (ctx) {
+                    ctx.font = `${text.fontSize * scale}px ${text.fontFamily}`;
+                    
+                    // Calculate cursor position
+                    const textBeforeCursor = editingTextValue.substring(0, cursorPosition);
+                    const cursorX = ctx.measureText(textBeforeCursor).width;
+                    
+                    // Calculate selection positions
+                    const textBeforeSelection = editingTextValue.substring(0, selectionStart);
+                    const textBeforeSelectionEnd = editingTextValue.substring(0, selectionEnd);
+                    const selectionStartX = ctx.measureText(textBeforeSelection).width;
+                    const selectionEndX = ctx.measureText(textBeforeSelectionEnd).width;
+                    
+                    const textY = text.y * scale;
+                    const textX = text.x * scale;
+                    const fontSize = text.fontSize * scale;
+                    
+                    return (
+                      <div key={text.id}>
+                        {/* Selection Highlight */}
+                        {selectionStart !== selectionEnd && (
+                          <div
+                            className="absolute bg-blue-300 opacity-50 border border-blue-500"
+                            style={{
+                              left: stageRect.left + textX + selectionStartX,
+                              top: stageRect.top + textY,
+                              width: selectionEndX - selectionStartX,
+                              height: fontSize * 1.2,
+                              minWidth: '2px',
+                            }}
+                          />
+                        )}
+                        
+                        {/* Cursor */}
+                        <div
+                          className="absolute bg-red-500 animate-pulse"
+                          style={{
+                            left: stageRect.left + textX + cursorX,
+                            top: stageRect.top + textY,
+                            height: fontSize * 1.2,
+                            width: '1px',
+                            animation: 'blink 0.8s infinite',
+                          }}
+                        />
+                      </div>
+                    );
+                  }
+                }
+              }
+              return null;
+            })}
+          </div>
+        )}
 
         {/* Bottom Toolbar */}
         <div className="fixed bottom-4 left-0 right-0 z-10 px-4">
@@ -1122,17 +1340,11 @@ function PhoneCaseEditor({
               >
                 <IoMdTrash size={"2rem"} />
               </button>
-              <button
-                className="p-1 hover:bg-white/20 rounded"
-                onClick={() => handleExport().catch(console.error)}
-              >
-                <IoMdDownload size={"2rem"} />
-              </button>
+
             </div>
           </div>
         </div>
-      </div>
-
+      
       {/* Wrapped Case Modal */}
       {showWrappedModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1154,6 +1366,7 @@ function PhoneCaseEditor({
         </div>
       )}
     </div>
+    </>
   );
 }
 

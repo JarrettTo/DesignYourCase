@@ -16,12 +16,14 @@ export default function Heading(){
                 
                 <div className="flex flex-col gap-2 md:gap-6 sm:w-2/3">
                     <p className="font-Poppins font-bold text-lg sm:text-3xl md:text-4xl leading-tight">
-                        Tired of boring cases?<br/> <span className="italic">Design your own!</span> 
+                    Customized Cases Brunei
                      </p>
 
-                    <div className="flex flex-col text-xs sm:text-base md:text-2xl gap-5 md:gap-10 ">
+                    <div className="flex flex-col font-Poppins text-xs sm:text-base md:text-2xl gap-5 md:gap-10 ">
                         <p>
-                        Choose from <span className="font-bold">tons of phone models</span> and create a case that matches your vibe — whether it’s an aesthetic design, a bold statement, or a favorite photo.
+                        Tired of boring cases? Design your own! Whether it’s a favourite photo, a silly design, a
+bold statement or just for the aesthetics. Make a 1 of 1 phone case that’s as unique as
+you.
                         </p>
                         <p>
                             Don&apos;t wait - Get your own personalized phone case now!

@@ -21,7 +21,7 @@ export default function Footer(){
                     </div>
                     <div className="flex flex-row items-center justify-center gap-2">
                         <FaWhatsapp className="text-green-500" size={20} />
-                        <p className="text-xs">+673 721 3869</p>
+                        <p className="text-xs">+673 744 6766</p>
                     </div>
                 </div>
             </div>

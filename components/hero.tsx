@@ -37,8 +37,8 @@ export default function Hero() {
                 </div>
             <div className="flex justify-center mt-10">
                     <Link href="/product-selection">
-                        <button className="bg-gradient-to-r from-pink to-[#83feff] py-3 px-9 rounded-full text-white font-Poppins font-bold text-xl md:text-2xl md:py-4 md:px-9 ">
-                            <p className=" drop-shadow-md">
+                        <button className="bg-gradient-to-r from-[#ff96d6] to-[#4cf3fe] py-3 px-9 rounded-full text-white font-Montserrat font-bold text-xl md:text-2xl md:py-4 md:px-9 ">
+                            <p className="">
                                 Get Started
                             </p>
                         </button>

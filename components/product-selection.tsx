@@ -2,10 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { SimpleGrid, Image, Tooltip } from '@mantine/core';
+import { SimpleGrid, Image, Tooltip, Modal, Text, Button, Loader } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { getDesignsByBrand, CaseStyle } from '@/lib/database/styles';
 import { IoHelpCircle } from "react-icons/io5";
+import NextImage from 'next/image';
 
 type CaseType = 'Transparent' | 'Colored';
 
@@ -47,6 +48,10 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [designs, setDesigns] = useState<CaseStyle[]>([]);
+    const [materialsLoading, setMaterialsLoading] = useState(false);
+    const [modalOpened, setModalOpened] = useState(false);
+    const [selectedMaterialForModal, setSelectedMaterialForModal] = useState<string>('');
+    const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
 
     const capitalizeFirstLetter = (str: string) => {
         return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -65,7 +70,7 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
             return "Transparent with reinforced 4-corner airbag protection for added drop resistance\n\nKeep your phone safe and stylish!";
         } else if (materialLower.includes('clear')) {
             return "A simple, durable clear case with straight edges\n\nPerfect for showcasing your design while keeping your phone protected.";
-        } else if (materialLower.includes('silicone')) {
+        } else if (materialLower.includes('silicone') || materialLower.includes('solid')) {
             return "A soft, smooth, and flexible silicone case for a comfortable grip.\n\nAvailable in 10 colors to match any style!";
         } else if (materialLower.includes('holo')) {
             return "Matte holographic finish that shifts colors under light.\n\nAvoid covering the entire case with your design to keep the holo effect visible!";
@@ -77,6 +82,93 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
         
         return "Select this material for your phone case.";
     };
+
+    const isMobile = () => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth <= 768;
+        }
+        return false;
+    };
+
+    const handleMaterialInfoClick = (material: string) => {
+        if (isMobile()) {
+            setSelectedMaterialForModal(material);
+            setModalOpened(true);
+        }
+    };
+
+    const handleImageLoad = (imageSrc: string) => {
+        setLoadingImages(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(imageSrc);
+            return newSet;
+        });
+    };
+
+    const handleImageLoadStart = (imageSrc: string) => {
+        setLoadingImages(prev => new Set(prev).add(imageSrc));
+    };
+
+    const OptimizedImage = ({ 
+        src, 
+        alt, 
+        width, 
+        height, 
+        className = "", 
+        priority = false 
+    }: {
+        src: string;
+        alt: string;
+        width: number;
+        height: number;
+        className?: string;
+        priority?: boolean;
+    }) => {
+        const isImageLoading = loadingImages.has(src);
+        
+        // Extract rounded classes from className
+        const roundedClasses = className.match(/rounded-[a-zA-Z0-9-]+/g) || [];
+        const otherClasses = className.replace(/rounded-[a-zA-Z0-9-]+/g, '').trim();
+        
+        return (
+            <div className={`relative ${otherClasses}`}>
+                {isImageLoading && (
+                    <div className={`absolute inset-0 flex items-center justify-center bg-gray-100 ${roundedClasses.join(' ')}`}>
+                        <Loader size="md" color="purple" />
+                    </div>
+                )}
+                <NextImage
+                    src={src}
+                    alt={alt}
+                    width={width}
+                    height={height}
+                    className={`transition-opacity duration-300 object-contain w-full h-full ${roundedClasses.join(' ')} ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
+                    onLoad={() => handleImageLoad(src)}
+                    onLoadStart={() => handleImageLoadStart(src)}
+                    priority={priority}
+                    quality={85}
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+                />
+            </div>
+        );
+    };
+
+    // Preload critical images
+    useEffect(() => {
+        const preloadImages = (imageUrls: string[]) => {
+            imageUrls.forEach(url => {
+                const img = new window.Image();
+                img.src = url;
+            });
+        };
+
+        // Preload first few material images when they become available
+        if (availableMaterials.length > 0) {
+            const criticalImages = availableMaterials.slice(0, 4).map(material => material.thumbnail);
+            preloadImages(criticalImages);
+        }
+    }, [availableMaterials]);
 
     // Get all unique brands from case_styles
     useEffect(() => {
@@ -166,6 +258,7 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                 return;
             }
 
+            setMaterialsLoading(true);
             try {
                 const designs = await getDesignsByBrand(selectedBrand);
                 if (designs) {
@@ -213,6 +306,8 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
             } catch (error) {
                 console.error('Error fetching materials:', error);
                 setError('Failed to load materials');
+            } finally {
+                setMaterialsLoading(false);
             }
         };
 
@@ -371,14 +466,17 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
             )}
 
             {loading ? (
-                <div className="mt-4">Loading...</div>
+                <div className="flex flex-col items-center justify-center min-h-[400px]">
+                    <Loader size="xl" color="#9883FD" />
+                    <p className="mt-4 text-gray-600 font-medium">Loading products...</p>
+                </div>
             ) : (
                 <div className="flex flex-col items-center justify-center w-full max-w-[1200px] px-4">
                     {!selectedBrand && (
                         <>
-                            <p className="mt-20 font-Poppins font-bold text-[30px] text-black text-center">Select Your Phone Brand</p>
+                            <p className="mt-7 md:mt-20 font-Poppins font-bold text-xl md:text-[30px] text-black text-center">Select Your Phone Brand</p>
                             <div className="w-full flex justify-center mt-14">
-                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-10">
                                     {brands.map((brand, index) => (
                                         <div 
                                             key={index}
@@ -389,8 +487,8 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                         <Image
                                             src={`/assets/images/${brand.originalName}.png`}
                                             alt={brand.displayName}
-                                            w={150}
-                                            h={150}
+                                            w={100}
+                                            h={100}
                                             fit="contain"
                                             radius="md"
                                         />
@@ -403,9 +501,9 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                     )}
 
                     {selectedBrand && !selectedModel && availableModels.length > 0 && (
-                        <div className="flex flex-col items-center w-full mt-20">
+                        <div className="flex flex-col items-center w-full mt-7 md:mt-20">
                             <div className="w-full flex justify-center items-center">
-                                <p className="font-Poppins font-bold text-[30px] text-center mb-8 md:mb-8 text-black">Select a Phone Model</p>
+                                <p className="font-Poppins font-bold text-xl md:text-[30px] text-center mb-8 md:mb-8 text-black">Select a Phone Model</p>
                             </div>
                             <div className="w-full flex justify-center">
                                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
@@ -429,13 +527,20 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                         </div>
                     )}
 
-                    {selectedModel && !selectedMaterial && availableMaterials.length > 0 && (
-                        <div className="flex flex-col items-center w-full mt-20">
+                    {selectedModel && !selectedMaterial && (
+                        <>
+                            {materialsLoading ? (
+                                <div className="flex flex-col items-center justify-center w-full mt-7 md:mt-20">
+                                    <Loader size="lg" color="#9883FD" />
+                                    <p className="mt-4 text-gray-600">Loading materials...</p>
+                                </div>
+                            ) : availableMaterials.length > 0 && (
+                        <div className="flex flex-col items-center w-full mt-7 md:mt-20">
                             <div className="w-full flex justify-center">
-                                <p className="font-Poppins font-bold text-[30px] text-center mb-8 md:mb-8 text-black">Select a Material</p>
+                                <p className="font-Poppins font-bold text-xl md:text-[30px] text-center mb-8 md:mb-8 text-black">Select your Case</p>
                             </div>
                             <div className="w-full flex justify-center">
-                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                                     {availableMaterials.map((material, index) => (
                                         <div 
                                             key={index}
@@ -445,15 +550,13 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                             }}
                                             className="cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-start"
                                         >
-                                            <Image
+                                            <OptimizedImage
                                                 src={material.thumbnail}
                                                 alt={material.material}
-                                                w={200}
-                                                h={200}
-                                                fit="contain"
-                                                radius="xl"
-                                                className="rounded-3xl"
-                                                style={{ borderRadius: '24px !important' }}
+                                                width={300}
+                                                height={300}
+                                                className="w-full aspect-square rounded-xl"
+                                                priority={index < 4} // Prioritize first 4 images
                                             />
                                             <div className="flex items-center justify-between mt-4 w-full">
                                                 <p className="text-start font-Poppins text-lg">{material.material}</p>
@@ -475,14 +578,20 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                                         }
                                                     }}
                                                 >
-                                                    <div className="cursor-pointer">
+                                                    <div 
+                                                        className="cursor-pointer"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleMaterialInfoClick(material.material);
+                                                        }}
+                                                    >
                                                         <div className="w-5 h-5 border-2 border-black rounded-full flex items-center justify-center hover:border-gray-700 transition-colors">
                                                             <span className="text-black text-xs font-bold">?</span>
                                                         </div>
                                                     </div>
                                                 </Tooltip>
                                             </div>
-                                            <p className="text-start font-Poppins text-lg font-bold text-[#A594F6]">
+                                            <p className="text-start font-Poppins text-md text-black">
                                                 {material.minPrice === material.maxPrice 
                                                     ? formatPrice(material.minPrice)
                                                     : `${formatPrice(material.minPrice)} - ${formatPrice(material.maxPrice)}`
@@ -493,15 +602,17 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                 </div>
                             </div>
                         </div>
+                            )}
+                        </>
                     )}
 
                     {selectedMaterial && availableColors.length > 0 && (
-                        <div className="flex flex-col items-center w-full mt-20">
+                        <div className="flex flex-col items-center w-full mt-7 md:mt-20">
                             <div className="w-full flex justify-center">
-                                <p className="font-Poppins font-bold text-[30px] text-center text-black mb-8">Select a Color</p>
+                                <p className="font-Poppins font-bold text-xl md:text-[30px] text-center text-black mb-8">Select a Color</p>
                             </div>
                             <div className="w-full flex justify-center">
-                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-16">
+                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                                     {availableColors.map((color, index) => (
                                         <div 
                                             key={index}
@@ -537,22 +648,18 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                                                     });
                                                 }
                                             }}
-                                            className="cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-start"
+                                            className="cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-center"
                                         >
-                                            <Image
+                                            <OptimizedImage
                                                 src={color.thumbnail}
                                                 alt={color.color}
-                                                w={200}
-                                                h={200}
-                                                fit="contain"
-                                                radius="xl"
-                                                className="rounded-3xl"
-                                                style={{ borderRadius: '24px !important' }}
+                                                width={200}
+                                                height={200}
+                                                className="w-full aspect-square rounded-xl"
+                                                priority={index < 6} // Prioritize first 6 color images
                                             />
-                                            <p className="text-start font-Poppins text-lg mt-4">{color.color}</p>
-                                            <p className="text-start font-Poppins text-lg font-bold text-[#A594F6]">
-                                                {formatPrice(color.price)}
-                                            </p>
+                                            <p className="text-center font-Poppins text-lg mt-3">{color.color}</p>
+                                           
                                         </div>
                                     ))}
                                 </div>
@@ -577,6 +684,43 @@ export default function ProductSelection({ onSubmit }: ProductSelectionProps) {
                     {selectedMaterial ? '← Back to Materials' : selectedModel ? '← Back to Models' : '← Back to Brands'}
                 </button>
             )}
+
+            {/* Material Info Modal for Mobile */}
+            <Modal
+                opened={modalOpened}
+                onClose={() => setModalOpened(false)}
+                title={`${selectedMaterialForModal} Case`}
+                size="md"
+                centered
+                styles={{
+                    title: {
+                        fontSize: '1.25rem',
+                        fontWeight: 'bold',
+                        color: '#333'
+                    },
+                    header: {
+                        backgroundColor: '#f8f9fa',
+                        borderBottom: '1px solid #e5e7eb'
+                    },
+                    body: {
+                        padding: '1.5rem'
+                    }
+                }}
+            >
+                <div className="space-y-4">
+                    <Text size="md" className="whitespace-pre-line">
+                        {getMaterialTooltip(selectedMaterialForModal)}
+                    </Text>
+                    <div className="flex justify-end pt-4">
+                        <Button 
+                            onClick={() => setModalOpened(false)}
+                            className="bg-purple hover:bg-gray-800"
+                        >
+                            Close
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

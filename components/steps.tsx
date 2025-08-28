@@ -14,7 +14,7 @@ export default function Steps() {
                             CHOOSE YOUR PHONE MODEL
                         </p>
                         <p className="text-xs md:text-lg">
-                            Discover a vast selection of phone models
+                        Apple & Android phone models available
                         </p>
                     </div>
                     

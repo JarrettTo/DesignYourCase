@@ -232,16 +232,16 @@ function CheckoutPageInner() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold mb-2 text-center">Order Placed Successfully!</h2>
-          <div className="text-lg font-semibold mb-2 text-center">Order # {orderNumber}</div>
+          <div className="text-lg font-semibold mb-2 text-center">Order # {orderNumber?.slice(0, 8)}</div>
           <p className="text-center mb-6">
             Thank you for your order!<br/>
             Your order is being processed. You&apos;ll receive an order confirmation on WhatsApp once we verify your payment.<br/><br/>
-            If you have any questions, please feel free to contact us!
+            If you have any questions, please feel free to WhatsApp us at +673 7446766
           </p>
           <button
             className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-md text-white transition-opacity cursor-pointer text-lg font-semibold"
             style={{ background: 'linear-gradient(to right, #FB98D7, #51F0FD)' }}
-            onClick={() => router.push('/product-selection')}
+            onClick={() => router.push('/')}
           >
             Home
           </button>
@@ -270,6 +270,7 @@ function CheckoutPageInner() {
                   />
                 </div>
                 <div className="flex-grow">
+                  <div className="font-semibold">Design #{design.id.slice(0, 8)}</div>
                   <h3 className="font-medium text-lg">
                     {design.case_styles.material?.charAt(0).toUpperCase() + design.case_styles.material?.slice(1)} Case
                   </h3>
@@ -286,13 +287,13 @@ function CheckoutPageInner() {
                 <input
                   type="text"
                   placeholder="Enter discount code"
-                  className="flex-grow px-4 py-3 rounded-md border border-gray-300 focus:border-[#B5A4FF] focus:ring-[#B5A4FF]"
+                  className="flex-grow px-2 text-sm md:text-md md:px-4 py-3 max-w-2/3 rounded-md border border-gray-300 focus:border-[#B5A4FF] focus:ring-[#B5A4FF]"
                   value={discountCode}
                   onChange={(e) => setDiscountCode(e.target.value)}
                 />
                 <button
                   onClick={handleApplyDiscount}
-                  className="px-4 py-2 bg-[#B5A4FF] text-white rounded-md hover:opacity-90 transition-opacity"
+                  className="px-2 md:px-4 py-2 bg-[#B5A4FF] text-sm md:text-md text-white rounded-md hover:opacity-90 transition-opacity"
                 >
                   Apply
                 </button>
@@ -364,6 +365,14 @@ function CheckoutPageInner() {
                   Delivery ($5)
                 </button>
               </div>
+              {formData.deliveryMethod === 'pickup' && (
+                <div className="mt-3 text-sm text-gray-600 text-center">
+                  Pick-Up location is at<br />
+                  <span className="font-medium">Faza Cube, Gadong Central</span>
+                  <br /><br />
+                  Your case will be ready in 2-3 weeks after order confirmation
+                </div>
+              )}
             </div>
 
             {formData.deliveryMethod === 'delivery' && (
@@ -382,12 +391,12 @@ function CheckoutPageInner() {
             <div className="space-y-4">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="text-gray-700 mb-3">
-                  To proceed, please make full payment by bank transfer or CDM to the account below and upload the receipt of your transaction to confirm your order
+                  To proceed, please make <span className='font-bold'>full payment</span> by bank transfer or CDM to the account below and upload the receipt of your transaction to confirm your order
                 </p>
                 <div className="space-y-2">
-                  <p className="font-medium">BIBD</p>
-                  <p>Design You Case Co.</p>
-                  <p className="font-mono">12102912901290</p>
+                  <p className="font-medium">BAIDURI</p>
+                  <p>Shirley Ng Le Yee</p>
+                  <p className="font-mono">0800707-472889</p>
                 </div>
               </div>
               <div>
